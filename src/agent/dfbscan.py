@@ -36,8 +36,8 @@ class DFBScanAgent:
                  ts_analyzer,
                  model_name,
                  temperature,
-                 call_depth,
-                 max_workers=1
+                 call_depth=3,
+                 max_workers=6
                  ) -> None:
         self.bug_type = bug_type
         self.is_reachable = is_reachable

@@ -8,5 +8,5 @@ python3 repoaudit.py \
   --is-reachable \
   --temperature 0.0 \
   --scan-type dfbscan \
-  --call-depth 6 \
-  --max-workers 3
+  --call-depth 3 \
+  --max-workers 6
