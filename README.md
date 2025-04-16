@@ -129,7 +129,7 @@ For some programs, a sequential analysis process may be quite time-consuming. To
 
 ## More
 
-We currently open-source the implementation of DFBSCanAgent for bug scanning. We will release more technical reports/research papers and open-source other agents in RepoAudit very soon. For more information, please refer to our website: [RepoAudit: Auditing Code As Human](https://repoaudit-home.github.io/).
+We currently open-source the implementation of DFBScanAgent for bug scanning. We will release more technical reports/research papers and open-source other agents in RepoAudit very soon. For more information, please refer to our website: [RepoAudit: Auditing Code As Human](https://repoaudit-home.github.io/).
 
 
 ## License
