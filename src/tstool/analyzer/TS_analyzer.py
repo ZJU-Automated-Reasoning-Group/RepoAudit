@@ -2,12 +2,14 @@ import sys
 from os import path
 from pathlib import Path
 import copy
+import concurrent.futures
 from typing import List, Tuple, Dict, Set
+from abc import ABC, abstractmethod
+
 import tree_sitter
 from tree_sitter import Language
 from tqdm import tqdm
 import networkx as nx
-from abc import ABC, abstractmethod
 
 sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 
@@ -15,87 +17,83 @@ from memory.syntactic.function import *
 from memory.syntactic.api import *
 from memory.syntactic.value import *
 
-class ContextLabel(Enum):
+class Parenthesis(Enum):
     LEFT_PAR = -1
     RIGHT_PAR = 1
 
     def __str__(self) -> str:
         return self.name
+    
 
+class ContextLabel:
+    def __init__(self, file_name: str, line_number: int, function_id: int, parenthesis: Parenthesis):
+        self.file_name = file_name
+        self.line_number = line_number
+        self.function_id = function_id
+        self.parenthesis = parenthesis
+
+    def __str__(self) -> str:
+        return f"({self.file_name} {self.line_number} {self.function_id} {self.parenthesis})"
+        
 
 class CallContext:
     def __init__(self, is_backward: bool = True):
-        self.context : List[Tuple[int, ContextLabel]] = []
-        self.simplified_context : List[Tuple[int, ContextLabel]] = []
+        self.context : List[ContextLabel] = []
+        self.simplified_context : List[ContextLabel] = []
         self.is_backward = is_backward
 
-    def add_and_check_context(self, function_id: int, label: ContextLabel) -> bool:
+    def add_and_check_context(self, label: ContextLabel) -> bool:
         """
         Add a context entry to the context
-        :param function_id: the function id
-        :param label: the label of the context entry
-        :ret True if the context after adding the new context pair is in the CFL reachable, False otherwise
+        :param label: the context label
+        :ret True if the context after adding the new context label is in the CFL reachable, False otherwise
         """
         is_CFL_reachable = True
         
         # Handle empty context case
         if len(self.simplified_context) == 0:
-            self.simplified_context.append((function_id, label))
-            self.context.append((function_id, label))
+            self.simplified_context.append(label)
+            self.context.append(label)
             return is_CFL_reachable
-        
+
         # Get the top element from the context stack
-        (top_function_id, top_label) = self.simplified_context[-1]
+        top_label = self.get_top_unmatched_context_label()
         
         # Determine which labels to match based on analysis direction
-        first_label = ContextLabel.LEFT_PAR if not self.is_backward else ContextLabel.RIGHT_PAR
-        second_label = ContextLabel.RIGHT_PAR if not self.is_backward else ContextLabel.LEFT_PAR
+        first_label = Parenthesis.LEFT_PAR if not self.is_backward else Parenthesis.RIGHT_PAR
+        second_label = Parenthesis.RIGHT_PAR if not self.is_backward else Parenthesis.LEFT_PAR
         
         # Check the label combinations
-        if top_label == label:
-            self.simplified_context.append((function_id, label))
+        if top_label.parenthesis == label.parenthesis:
+            self.simplified_context.append(label)
         elif top_label == first_label and label == second_label:
-            if top_function_id == function_id:
+            if top_label.file_name == label.file_name and top_label.line_number == label.line_number and top_label.function_id == label.function_id:
                 self.simplified_context.pop()
             else:
                 is_CFL_reachable = False
         else:
             # Other combinations
-            self.simplified_context.append((function_id, label))
+            self.simplified_context.append(label)
 
         # Only update context if CFL reachable
         if is_CFL_reachable:
-            self.context.append((function_id, label))
-            
+            self.context.append(label)
         return is_CFL_reachable
-
-    def check_context(self, function_id: int, label: ContextLabel) -> bool:
+    
+    def get_top_unmatched_context_label(self) -> ContextLabel:
         """
-        Check if adding the context entry keeps the CFL reachability
-        :param function_id: the function id
-        :param label: the label of the context entry
-        :return: True if the context remains CFL reachable, False otherwise
+        Get the top unmatched context label.
+        :return: The top unmatched context label.
         """
         if len(self.simplified_context) == 0:
-            return True
-
-        (top_function_id, top_label) = self.simplified_context[-1]
-        
-        # Determine which labels to match based on analysis direction
-        first_label = ContextLabel.LEFT_PAR if not self.is_backward else ContextLabel.RIGHT_PAR
-        second_label = ContextLabel.RIGHT_PAR if not self.is_backward else ContextLabel.LEFT_PAR
-        
-        if top_label == label:
-            return True
-        elif top_label == first_label and label == second_label:
-            return top_function_id == function_id
-        else:
-            # Other combinations
-            return True
-
+            return None
+        return self.simplified_context[-1]
 
     def __str__(self) -> str:
-        return f"CallContext(is_backward={self.is_backward}, context={self.context})"
+        """
+        Convert the context to a string representation.
+        """
+        return f"{self.is_backward}" + " -> ".join([str(label) for label in self.context])
     
     def __eq__(self, other: 'CallContext') -> bool:
         return self.__str__() == other.__str__()
@@ -103,6 +101,7 @@ class CallContext:
     def __hash__(self) -> int:
         # Convert context list to tuple for hashing; assumes that context entries are immutable
         return hash(self.__str__())
+    
 
 class TSAnalyzer(ABC):
     """
@@ -113,6 +112,7 @@ class TSAnalyzer(ABC):
         self,
         code_in_files: Dict[str, str],
         language_name: str,
+        max_symbolic_workers_num = 10
     ) -> None:
         """
         Initialize TSAnalyzer with the project source code and language.
@@ -123,6 +123,7 @@ class TSAnalyzer(ABC):
         cwd = Path(__file__).resolve().parent.absolute()
         TSPATH = cwd / "../../../lib/build/"
         language_path = TSPATH / "my-languages.so"
+        self.max_symbolic_workers_num = max_symbolic_workers_num
 
         # Initialize tree-sitter parser
         self.parser = tree_sitter.Parser()
@@ -148,8 +149,8 @@ class TSAnalyzer(ABC):
         self.fileContentDic = {}
         self.glb_var_map = {}      # global var info
 
-        self.function_env = {}  
-        self.api_env = {}
+        self.function_env: dict[int, Function] = {}
+        self.api_env: dict[int, API] = {}
 
         # Results of call graph analysis
         ## Caller-callee relationship between user-defined functions
@@ -165,57 +166,98 @@ class TSAnalyzer(ABC):
 
         # Analyze stage II: Call graph analysis
         self.analyze_call_graph()
+        return
 
+    def _parse_single_file(self, file_path: str, source_code: str) -> Tuple[str, str]:
+        """
+        Helper function to parse a single file.
+        """
+        try:
+            tree = self.parser.parse(bytes(source_code, "utf8"))
+        except Exception as e:
+            print(self.parser)
+            print(f"Error parsing {file_path}: {e}")
+            exit(0)
+        # Call user-defined processing.
+        self.extract_function_info(file_path, source_code, tree)
+        self.extract_global_info(file_path, source_code, tree)
+        return file_path, source_code
+
+    def _analyze_single_function(self, function_id: int, raw_data: Tuple) -> Tuple[int, 'Function']:
+        """
+        Helper function to analyze a single function.
+        """
+        (name, start_line_number, end_line_number, function_node) = raw_data
+        file_name = self.functionToFile[function_id]
+        file_content = self.fileContentDic[file_name]
+        function_code = file_content[function_node.start_byte:function_node.end_byte]
+        current_function = Function(
+            function_id,
+            name,
+            function_code,
+            start_line_number,
+            end_line_number,
+            function_node,
+            file_name
+        )
+        current_function = self.extract_meta_data_in_single_function(current_function)
+        return function_id, current_function
 
     def parse_project(self) -> None:
         """
         Parse all project files using tree-sitter.
         """
-        pbar = tqdm(total=len(self.code_in_files), desc="Parsing files")
-        for file_path in self.code_in_files:
-            pbar.update(1)
-            source_code = self.code_in_files[file_path]
-            try:
-                tree = self.parser.parse(bytes(source_code, "utf8"))
-            except Exception as e:
-                print(self.parser)
-                print(f"Error parsing {file_path}: {e}")
-                exit(0)
-            self.extract_function_info(file_path, source_code, tree)
-            self.extract_global_info(file_path, source_code, tree)
-            self.fileContentDic[file_path] = source_code
-        pbar.close()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_symbolic_workers_num) as executor:
+            futures = {}
+            pbar = tqdm(total=len(self.code_in_files), desc="Parsing files")
+            for file_path, source_code in self.code_in_files.items():
+                # Submit a task for each file.
+                future = executor.submit(self._parse_single_file, file_path, source_code)
+                futures[future] = file_path
+            # Collect results.
+            for future in concurrent.futures.as_completed(futures):
+                file_path, source = future.result()
+                self.fileContentDic[file_path] = source
+                pbar.update(1)
+            pbar.close()
 
-        pbar = tqdm(total=len(self.functionRawDataDic), desc="Analyzing functions")
-        for function_id in self.functionRawDataDic:
-            pbar.update(1)
-            (name, start_line_number, end_line_number, function_node) = (
-                self.functionRawDataDic[function_id]
-            )
-            file_name = self.functionToFile[function_id]
-            file_content = self.fileContentDic[file_name]
-            function_code = file_content[function_node.start_byte:function_node.end_byte]
-            current_function = Function(
-                function_id, name, function_code, start_line_number, end_line_number, function_node, file_name
-            )
-            current_function = self.extract_meta_data_in_single_function(current_function)
-            self.function_env[function_id] = current_function
-        pbar.close()
-
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_symbolic_workers_num) as executor:
+            futures = {}
+            pbar = tqdm(total=len(self.functionRawDataDic), desc="Analyzing functions")
+            for function_id, raw_data in self.functionRawDataDic.items():
+                future = executor.submit(
+                    self._analyze_single_function,
+                    function_id,
+                    raw_data
+                )
+                futures[future] = function_id
+            
+            for future in concurrent.futures.as_completed(futures):
+                func_id, current_function = future.result()
+                self.function_env[func_id] = current_function
+                pbar.update(1)
+            pbar.close()
+        return
 
     def analyze_call_graph(self) -> None:
         """
         Compute two kinds of caller-callee relationships:
         1. Between user-defined functions.
         2. Between user-defined functions and library APIs.
-        Note that library APIs are collected on the fly
+        Note that library APIs are collected on the fly.
+        This method parallelizes the extraction of call graph edges.
         """
-        pbar = tqdm(total=len(self.functionRawDataDic), desc="Analyzing call graphs")
-        for function_id in self.function_env:
-            pbar.update(1)
-            current_function = self.function_env[function_id]
-            self.extract_call_graph_edges(current_function)
-        pbar.close()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_symbolic_workers_num) as executor:
+            futures = {}
+            pbar = tqdm(total=len(self.function_env), desc="Analyzing call graphs")
+            for function_id, current_function in self.function_env.items():
+                future = executor.submit(self.extract_call_graph_edges, current_function)
+                futures[future] = function_id
+            for future in concurrent.futures.as_completed(futures):
+                # Optionally, process or log each completed task here.
+                pbar.update(1)
+            pbar.close()
+        return
 
     ###########################################
     # Helper function for project AST parsing #
@@ -365,18 +407,27 @@ class TSAnalyzer(ABC):
         caller_functions = list({function.function_id: function for function in caller_functions}.values())
         return caller_functions
     
-    def get_all_transitive_callee_functions(self, function: Function, max_depth = 1000) -> List[Function]:
+    def get_all_transitive_callee_functions(self, function: Function, max_depth, visited=None) -> List[Function]:
         """
         Get all transitive callee functions for the provided function.
         """
         if max_depth == 0:
             return []
+        
+        if visited is None:
+            visited = set()
+
+        if function.function_id in visited:
+            return []
+        
+        visited.add(function.function_id)
+
         if function.function_id not in self.function_caller_callee_map:
             return []
         callee_ids = self.function_caller_callee_map[function.function_id]
         callee_functions = [self.function_env[callee_id] for callee_id in callee_ids]
         for callee_function in callee_functions:
-            callee_functions.extend(self.get_all_transitive_callee_functions(callee_function, max_depth - 1))
+            callee_functions.extend(self.get_all_transitive_callee_functions(callee_function, max_depth - 1, visited))
         callee_functions = list({function.function_id: function for function in callee_functions}.values())
         return callee_functions
 
@@ -418,15 +469,15 @@ class TSAnalyzer(ABC):
         callee_name = self.get_callee_name_at_call_site(call_site_node, source_code)
         arguments = self.get_arguments_at_callsite(current_function, call_site_node)
         temp_callee_ids = []
-        while callee_name in self.glb_var_map:
-            callee_name = self.glb_var_map[callee_name]
+        # while callee_name in self.glb_var_map:
+        #     callee_name = self.glb_var_map[callee_name]
         if callee_name in self.functionNameToId:
             temp_callee_ids.extend(list(self.functionNameToId[callee_name]))
         # Check parameter count matches the arguments count.
         callee_ids = []
         for callee_id in temp_callee_ids:
             callee = self.function_env[callee_id]
-            paras = self.get_parameters_in_single_function(callee)
+            paras = callee.paras
             if len(paras) == len(arguments):
                 callee_ids.append(callee_id)
         return callee_ids
@@ -443,8 +494,8 @@ class TSAnalyzer(ABC):
         callee_name = self.get_callee_name_at_call_site(call_site_node, source_code)
         arguments = self.get_arguments_at_callsite(current_function, call_site_node)
         callee_ids = []
-        while callee_name in self.glb_var_map:
-            callee_name = self.glb_var_map[callee_name]
+        # while callee_name in self.glb_var_map:
+        #     callee_name = self.glb_var_map[callee_name]
         tmp_api = API(-1, callee_name, len(arguments))
         for api_id in self.api_env:
             if self.api_env[api_id] == tmp_api:
