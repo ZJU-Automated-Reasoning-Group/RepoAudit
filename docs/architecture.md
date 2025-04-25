@@ -26,9 +26,6 @@ Memory  |     Syntactic Info        Semantic Properties          Scan Report    
         +--------------------------------------------------------------------------+
 ```
 
-In what follows, we offer more illustrations on these core componets.
-If you want to have an overview of our project structure, you can refer to the file [structure.md](structure.md).
-
 
 ## Core Components
 
