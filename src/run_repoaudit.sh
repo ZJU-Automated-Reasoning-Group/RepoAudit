@@ -1,9 +1,9 @@
 #!/bin/bash
 SCAN_TYPE=$1
-LANGUAGE=Java
+LANGUAGE=Python
 MODEL=claude-3.7
 BUG_TYPE=NPD
-PROJECT=toy/NPD
+PROJECT=toy
 
 # For demo/test run
 python3 repoaudit.py \
@@ -15,4 +15,4 @@ python3 repoaudit.py \
   --temperature 0.0 \
   --scan-type dfbscan \
   --call-depth 3 \
-  --max-neural-workers 10
+  --max-neural-workers 30

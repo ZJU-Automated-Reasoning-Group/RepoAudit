@@ -14,8 +14,11 @@ from typing import List
 
 default_dfbscan_checkers = {
     "Cpp": ["MLK", "NPD", "UAF"],
-    "Java": ["NPD"]
+    "Java": ["NPD"],
+    "Python": ["NPD"],
+    "Go": ["NPD"],
 }
+
 
 class RepoAudit:
     def __init__(
@@ -28,11 +31,11 @@ class RepoAudit:
         # argument format check
         self.args = args
         is_input_valid, error_messages = self.validate_inputs()
-    
+
         if not is_input_valid:
             print("\n".join(error_messages))
             exit(1)
-        
+
         self.project_path = args.project_path
         self.language = args.language
         self.code_in_files = {}
@@ -57,18 +60,26 @@ class RepoAudit:
             suffixs = ["py"]
         else:
             raise ValueError("Invalid language setting")
-        
+
         # Load all files with the specified suffix in the project path
         self.travese_files(self.project_path, suffixs)
 
         if self.language == "Cpp":
-            self.ts_analyzer = Cpp_TSAnalyzer(self.code_in_files, self.language, self.max_symbolic_workers)
+            self.ts_analyzer = Cpp_TSAnalyzer(
+                self.code_in_files, self.language, self.max_symbolic_workers
+            )
         elif self.language == "Go":
-            self.ts_analyzer = Go_TSAnalyzer(self.code_in_files, self.language, self.max_symbolic_workers)
+            self.ts_analyzer = Go_TSAnalyzer(
+                self.code_in_files, self.language, self.max_symbolic_workers
+            )
         elif self.language == "Java":
-            self.ts_analyzer = Java_TSAnalyzer(self.code_in_files, self.language, self.max_symbolic_workers)
+            self.ts_analyzer = Java_TSAnalyzer(
+                self.code_in_files, self.language, self.max_symbolic_workers
+            )
         elif self.language == "Python":
-            self.ts_analyzer = Python_TSAnalyzer(self.code_in_files, self.language, self.max_symbolic_workers)
+            self.ts_analyzer = Python_TSAnalyzer(
+                self.code_in_files, self.language, self.max_symbolic_workers
+            )
         return
 
     def start_repo_auditing(self) -> None:
@@ -81,7 +92,7 @@ class RepoAudit:
                 self.language,
                 self.ts_analyzer,
                 self.model_name,
-                self.temperature
+                self.temperature,
             )
             metascan_pipeline.start_scan()
 
@@ -95,11 +106,10 @@ class RepoAudit:
                 self.model_name,
                 self.temperature,
                 self.call_depth,
-                self.max_neural_workers
+                self.max_neural_workers,
             )
             dfbscan_agent.start_scan()
         return
-    
 
     def travese_files(self, project_path: str, suffixs: List) -> None:
         """
@@ -117,7 +127,7 @@ class RepoAudit:
 
     def validate_inputs(self) -> Tuple[bool, List[str]]:
         err_messages = []
-    
+
         # For each scan type, check required parameters.
         if self.args.scan_type == "dfbscan":
             if not self.args.model_name:
@@ -131,7 +141,8 @@ class RepoAudit:
         else:
             err_messages.append("Error: Unknown scan type provided.")
         return (len(err_messages) == 0, err_messages)
-    
+
+
 def configure_args():
     parser = argparse.ArgumentParser(
         description="RepoAudit: Run metascan or dfbscan on a project."
@@ -140,20 +151,34 @@ def configure_args():
         "--scan-type",
         required=True,
         choices=["metascan", "dfbscan"],
-        help="The type of scan to perform."
+        help="The type of scan to perform.",
     )
     # Common parameters of metascan and dfbscan
     parser.add_argument("--project-path", required=True, help="Project path")
     parser.add_argument("--language", required=True, help="Programming language")
-    parser.add_argument("--max-symbolic-workers", type=int, default=10, help="Max symbolic workers for parsing-based analysis")
-    
+    parser.add_argument(
+        "--max-symbolic-workers",
+        type=int,
+        default=10,
+        help="Max symbolic workers for parsing-based analysis",
+    )
+
     # Common parameters for dfbscan
     parser.add_argument("--model-name", help="The name of LLMs")
-    parser.add_argument("--temperature", type=float, default=0.5, help="Temperature for inference")
+    parser.add_argument(
+        "--temperature", type=float, default=0.5, help="Temperature for inference"
+    )
     parser.add_argument("--call-depth", type=int, default=3, help="Call depth setting")
-    parser.add_argument("--max-neural-workers", type=int, default=1, help="Max neural workers for prompting-based analysis")
+    parser.add_argument(
+        "--max-neural-workers",
+        type=int,
+        default=1,
+        help="Max neural workers for prompting-based analysis",
+    )
     parser.add_argument("--bug-type", help="Bug type for dfbscan)")
-    parser.add_argument("--is-reachable", action="store_true", help="Flag for bugscan reachability")
+    parser.add_argument(
+        "--is-reachable", action="store_true", help="Flag for bugscan reachability"
+    )
 
     args = parser.parse_args()
     return args

@@ -7,15 +7,14 @@ import json
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 # Language dictionary
-language_dict = {
-    "Cpp": "cpp"
-}
+language_dict = {"Cpp": "cpp"}
 
 # Base path for results
 BASE_PATH = Path(__file__).resolve().parents[2]
 
 # Inject custom styles for enhanced aesthetics
-st.markdown("""
+st.markdown(
+    """
     <style>
         /* Base font sizing */
         html, body, [class*="css"] {
@@ -75,10 +74,15 @@ st.markdown("""
             font-size: 0.9rem !important;
         }
     </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
 
 # Function to get results
-def get_results(language="Cpp", scanner="dfbscan", model="claude-3.5", bug_type="NPD") -> list:
+def get_results(
+    language="Cpp", scanner="dfbscan", model="claude-3.5", bug_type="NPD"
+) -> list:
     result_dir = Path(f"{BASE_PATH}/result/{scanner}/{model}/{bug_type}")
     if not result_dir.exists():
         return []
@@ -89,6 +93,7 @@ def get_results(language="Cpp", scanner="dfbscan", model="claude-3.5", bug_type=
             if project_dir.is_dir():
                 projects.append(project_dir.name)
     return projects
+
 
 # Function to display the Home page
 def display_home():
@@ -105,6 +110,7 @@ def display_home():
         """
     )
 
+
 # Function to display the Results page
 def display_results():
     st.title("Analysis Results")
@@ -115,9 +121,17 @@ def display_results():
     model = st.selectbox(
         "Select Model",
         [
-            "claude-3.5", "claude-3.7", "o3-mini", "gpt-4o", "gpt-4-turbo",
-            "gpt-4o-mini", "deepseek-local", "deepseek-chat", "deepseek-reasoner", "gemini"
-        ]
+            "claude-3.5",
+            "claude-3.7",
+            "o3-mini",
+            "gpt-4o",
+            "gpt-4-turbo",
+            "gpt-4o-mini",
+            "deepseek-local",
+            "deepseek-chat",
+            "deepseek-reasoner",
+            "gemini",
+        ],
     )
 
     scanner_dir = Path(f"{BASE_PATH}/result/{scanner}/{model}")
@@ -130,9 +144,13 @@ def display_results():
     project_name = st.selectbox("Select Project", projects)
 
     if project_name:
-        project_dir = Path(f"{BASE_PATH}/result/{scanner}/{model}/{bug_type}/{language}/{project_name}")
+        project_dir = Path(
+            f"{BASE_PATH}/result/{scanner}/{model}/{bug_type}/{language}/{project_name}"
+        )
         if project_dir.exists():
-            timestamps = sorted([d.name for d in project_dir.iterdir() if d.is_dir()], reverse=True)
+            timestamps = sorted(
+                [d.name for d in project_dir.iterdir() if d.is_dir()], reverse=True
+            )
             selected_timestamp = st.selectbox("Select Timestamp", timestamps)
         else:
             return
@@ -143,24 +161,30 @@ def display_results():
             col1, col2, col3 = st.columns(3)
             with col1:
                 if st.button("Show All Results"):
-                    with open(result_path, 'r') as f:
+                    with open(result_path, "r") as f:
                         st.session_state.analysis_results = json.load(f)
             with col2:
                 if st.button("Show True Labeled Results"):
-                    with open(result_path, 'r') as f:
+                    with open(result_path, "r") as f:
                         all_results = json.load(f)
-                    tp_results = {k: v for k, v in all_results.items() if v.get("is_human_confirmed_true") == "True"}
+                    tp_results = {
+                        k: v
+                        for k, v in all_results.items()
+                        if v.get("is_human_confirmed_true") == "True"
+                    }
                     st.session_state.analysis_results = tp_results
 
     if st.session_state.get("analysis_results"):
         results = st.session_state.analysis_results
         for key, item in results.items():
             tokens = item.get("buggy_value").split(",")
-            
+
             with st.expander(tokens[-4] + " at Line " + tokens[-3]):
                 st.markdown("**Explanation:**")
                 st.text(item.get("explanation", ""))
-                st.write("**Human Validation Result:**", item.get("is_human_confirmed_true"))
+                st.write(
+                    "**Human Validation Result:**", item.get("is_human_confirmed_true")
+                )
 
                 validation_key = f"validation_{key}"
                 if validation_key not in st.session_state.bug_validations:
@@ -174,47 +198,60 @@ def display_results():
                         options=["True", "False", "unknown"],
                         index=2,
                         key=validation_key,
-                        horizontal=True
+                        horizontal=True,
                     )
                     st.session_state.bug_validations[validation_key] = validation
                 with col2:
                     if st.button("Save", key=f"save_{key}", use_container_width=False):
                         item["is_human_confirmed_true"] = validation
-                        with open(result_path, 'r') as f:
+                        with open(result_path, "r") as f:
                             temp_results = json.load(f)
                         temp_results[key]["is_human_confirmed_true"] = validation
-                        with open(result_path, 'w') as f:
+                        with open(result_path, "w") as f:
                             json.dump(temp_results, f, indent=4)
 
                 toggle_key = f"show_fn_{key}"
                 if st.button(
-                    "Show Function Content" if not st.session_state.show_function.get(toggle_key) else "Hide Function Content",
-                    key=toggle_key
+                    (
+                        "Show Function Content"
+                        if not st.session_state.show_function.get(toggle_key)
+                        else "Hide Function Content"
+                    ),
+                    key=toggle_key,
                 ):
-                    st.session_state.show_function[toggle_key] = not st.session_state.show_function.get(toggle_key, False)
+                    st.session_state.show_function[toggle_key] = (
+                        not st.session_state.show_function.get(toggle_key, False)
+                    )
 
                 if st.session_state.show_function.get(toggle_key):
-                    files, names, code_snippets = item.get("relevant_functions", ([], [], []))
+                    files, names, code_snippets = item.get(
+                        "relevant_functions", ([], [], [])
+                    )
                     for file, name, snippet in zip(files, names, code_snippets):
                         st.markdown("---")
                         st.markdown(f"**Function: `{name}`**")
                         st.write(f"- File: `{file}`")
-                        st.code(snippet, language=language_dict.get("Cpp", "text"), line_numbers=True)
+                        st.code(
+                            snippet,
+                            language=language_dict.get("Cpp", "text"),
+                            line_numbers=True,
+                        )
 
         st.download_button(
             "Download Results",
             data=json.dumps(results, indent=2),
             file_name="detect_info.json",
-            mime="application/json"
+            mime="application/json",
         )
+
 
 # Main function to handle navigation
 def main():
-    if 'show_function' not in st.session_state:
+    if "show_function" not in st.session_state:
         st.session_state.show_function = {}
-    if 'analysis_results' not in st.session_state:
+    if "analysis_results" not in st.session_state:
         st.session_state.analysis_results = None
-    if 'bug_validations' not in st.session_state:
+    if "bug_validations" not in st.session_state:
         st.session_state.bug_validations = {}
 
     st.sidebar.title("Navigation")
@@ -224,6 +261,7 @@ def main():
         display_home()
     elif page == "Results":
         display_results()
+
 
 if __name__ == "__main__":
     main()
