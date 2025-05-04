@@ -2,10 +2,16 @@
 
 RepoAudit is a repo-level bug detector for general bugs. Currently, it supports the detection of diverse bug types (such as Null Pointer Dereference, Memory Leak, and Use After Free) in multiple programming languages (including C/C++, Java, Python, and Go). It leverages [LLMSCAN](https://github.com/PurCL/LLMSCAN) to parse the codebase and uses LLM to mimic the process of manual code auditing. Compared with existing code auditing tools, RepoAudit offers the following advantages:
 
-- Compilation-Free Analysis
-- Multi-Lingual Support
-- Multiple Bug Type Detection
-- Customization Support
+- 🛡️ **Compilation-Free Analysis**
+- 🌍 **Multi-Lingual Support**
+- 🐞 **Multiple Bug Type Detection**
+- ⚙️ **Customization Support**
+
+## News 📰
+
+**[May 2025]** 🎉 Our paper "RepoAudit: Automated Code Auditing with Multi-Agent LLM Framework" has been accepted at ICML 2025! 🏆
+
+**[March 2025]** RepoAudit has helped identify over 100 bugs in open-source projects this quarter!
 
 ## Agents in RepoAudit
 
