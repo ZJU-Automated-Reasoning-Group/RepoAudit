@@ -24,7 +24,6 @@ from tstool.dfbscan_extractor.Go.Go_NPD_extractor import *
 from llmtool.LLM_utils import *
 from llmtool.dfbscan.intra_dataflow_analyzer import *
 from llmtool.dfbscan.path_validator import *
-from llmtool.dfbscan.incorrectness_logic_ranker import *
 
 from memory.semantic.dfbscan_state import *
 from memory.syntactic.function import *
@@ -48,25 +47,9 @@ class DFBScanAgent(Agent):
         call_depth,
         max_neural_workers=1,
         agent_id: int = 0,
-        use_incorrectness_logic=False,
     ) -> None:
-        """
-        Initialize the DFBScanAgent.
-        :param bug_type: the type of bug to be detected
-        :param is_reachable: whether to detect reachable or unreachable bugs
-        :param project_path: the path to the project
-        :param language: the programming language
-        :param ts_analyzer: the tree-sitter analyzer
-        :param model_name: the model name for LLM tools
-        :param temperature: the temperature for LLM tools
-        :param call_depth: the maximum call depth for interprocedural analysis
-        :param max_neural_workers: the maximum number of neural workers if parallel execution is used
-        :param agent_id: the agent ID
-        :param use_incorrectness_logic: whether to use incorrectness logic ranker for identifying highly-likely bugs
-        """
         self.bug_type = bug_type
         self.is_reachable = is_reachable
-        self.use_incorrectness_logic = use_incorrectness_logic
 
         self.project_path = project_path
         self.project_name = project_path.split("/")[-1]
@@ -107,17 +90,6 @@ class DFBScanAgent(Agent):
             self.MAX_QUERY_NUM,
             self.logger,
         )
-        
-        # Initialize incorrectness logic ranker only if enabled
-        self.incorrectness_logic_ranker = None
-        if self.use_incorrectness_logic:
-            self.incorrectness_logic_ranker = IncorrectnessLogicRanker(
-                self.model_name,
-                self.temperature,
-                self.language,
-                self.MAX_QUERY_NUM,
-                self.logger,
-            )
 
         self.src_values, self.sink_values = self.__obtain_extractor().extract_all()
         self.state = DFBScanState(self.src_values, self.sink_values)
@@ -507,8 +479,7 @@ class DFBScanAgent(Agent):
                     continue
 
                 for buggy_path in self.state.potential_buggy_paths[src_value].values():
-                    # First validate if the path is reachable
-                    validator_input = PathValidatorInput(
+                    input = PathValidatorInput(
                         self.bug_type,
                         buggy_path,
                         {
@@ -516,12 +487,12 @@ class DFBScanAgent(Agent):
                             for value in buggy_path
                         },
                     )
-                    validator_output: PathValidatorOutput = self.path_validator.invoke(validator_input)
+                    output: PathValidatorOutput = self.path_validator.invoke(input)
 
-                    if validator_output is None:
+                    if output is None:
                         continue
 
-                    if validator_output.is_reachable:
+                    if output.is_reachable:
                         relevant_functions = {}
                         for value in buggy_path:
                             function = self.ts_analyzer.get_function_from_localvalue(
@@ -530,48 +501,19 @@ class DFBScanAgent(Agent):
                             if function is not None:
                                 relevant_functions[function.function_id] = function
 
-                        # Check if we should use incorrectness logic ranker
-                        if self.use_incorrectness_logic and self.incorrectness_logic_ranker:
-                            # For reachable paths, also evaluate the likelihood of being a bug using incorrectness logic
-                            ranker_input = IncorrectnessLogicRankerInput(
-                                self.bug_type,
-                                buggy_path,
-                                {
-                                    value: self.ts_analyzer.get_function_from_localvalue(value)
-                                    for value in buggy_path
-                                },
-                            )
-                            ranker_output: IncorrectnessLogicRankerOutput = self.incorrectness_logic_ranker.invoke(ranker_input)
-                            
-                            # Only report bugs that have a high likelihood score (e.g., > 0.6)
-                            if ranker_output is not None and ranker_output.bug_likelihood > 0.6:
-                                # Include both validator explanation and likelihood score in the bug report
-                                combined_explanation = f"Reachability Analysis: {validator_output.explanation_str}\n\n" + \
-                                                      f"Bug Likelihood ({ranker_output.bug_likelihood:.2f}): {ranker_output.explanation_str}"
-                                
-                                bug_report = BugReport(
-                                    self.bug_type,
-                                    src_value,
-                                    relevant_functions,
-                                    combined_explanation
-                                )
-                                self.state.update_bug_report(bug_report)
-                        else:
-                            # Without incorrectness logic, just use the path validator's explanation
-                            bug_report = BugReport(
-                                self.bug_type,
-                                src_value,
-                                relevant_functions,
-                                validator_output.explanation_str
-                            )
-                            self.state.update_bug_report(bug_report)
-                        
-                        bug_report_dict = {
-                            bug_report_id: bug.to_dict()
-                            for bug_report_id, bug in self.state.bug_reports.items()
-                        }
+                        bug_report = BugReport(
+                            self.bug_type,
+                            src_value,
+                            relevant_functions,
+                            output.explanation_str,
+                        )
+                        self.state.update_bug_report(bug_report)
 
                 # Dump bug reports
+                bug_report_dict = {
+                    bug_report_id: bug.to_dict()
+                    for bug_report_id, bug in self.state.bug_reports.items()
+                }
                 with open(
                     self.res_dir_path + "/detect_info.json", "w"
                 ) as bug_info_file:
@@ -698,8 +640,7 @@ class DFBScanAgent(Agent):
 
         # Validate buggy paths and generate bug reports
         for buggy_path in self.state.potential_buggy_paths[src_value].values():
-            # First validate if the path is reachable
-            validator_input = PathValidatorInput(
+            input = PathValidatorInput(
                 self.bug_type,
                 buggy_path,
                 {
@@ -707,56 +648,22 @@ class DFBScanAgent(Agent):
                     for value in buggy_path
                 },
             )
-            validator_output: PathValidatorOutput = self.path_validator.invoke(validator_input)
+            output: PathValidatorOutput = self.path_validator.invoke(input)
 
-            if validator_output is None:
+            if output is None:
                 continue
 
-            if validator_output.is_reachable:
+            if output.is_reachable:
                 relevant_functions = {}
                 for value in buggy_path:
-                    function = self.ts_analyzer.get_function_from_localvalue(
-                        value
-                    )
+                    function = self.ts_analyzer.get_function_from_localvalue(value)
                     if function is not None:
                         relevant_functions[function.function_id] = function
 
-                # Check if we should use incorrectness logic ranker
-                if self.use_incorrectness_logic and self.incorrectness_logic_ranker:
-                    # For reachable paths, also evaluate the likelihood of being a bug using incorrectness logic
-                    ranker_input = IncorrectnessLogicRankerInput(
-                        self.bug_type,
-                        buggy_path,
-                        {
-                            value: self.ts_analyzer.get_function_from_localvalue(value)
-                            for value in buggy_path
-                        },
-                    )
-                    ranker_output: IncorrectnessLogicRankerOutput = self.incorrectness_logic_ranker.invoke(ranker_input)
-                    
-                    # Only report bugs that have a high likelihood score (e.g., > 0.6)
-                    if ranker_output is not None and ranker_output.bug_likelihood > 0.6:
-                        # Include both validator explanation and likelihood score in the bug report
-                        combined_explanation = f"Reachability Analysis: {validator_output.explanation_str}\n\n" + \
-                                              f"Bug Likelihood ({ranker_output.bug_likelihood:.2f}): {ranker_output.explanation_str}"
-                        
-                        bug_report = BugReport(
-                            self.bug_type,
-                            src_value,
-                            relevant_functions,
-                            combined_explanation
-                        )
-                        self.state.update_bug_report(bug_report)
-                else:
-                    # Without incorrectness logic, just use the path validator's explanation
-                    bug_report = BugReport(
-                        self.bug_type,
-                        src_value,
-                        relevant_functions,
-                        validator_output.explanation_str
-                    )
-                    self.state.update_bug_report(bug_report)
-                
+                bug_report = BugReport(
+                    self.bug_type, src_value, relevant_functions, output.explanation_str
+                )
+                self.state.update_bug_report(bug_report)
                 bug_report_dict = {
                     bug_report_id: bug.to_dict()
                     for bug_report_id, bug in self.state.bug_reports.items()

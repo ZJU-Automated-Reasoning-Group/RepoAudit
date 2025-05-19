@@ -3,6 +3,7 @@ import glob
 import sys
 from agent.metascan import *
 from agent.dfbscan import *
+from agent.incorrectness import *
 
 from tstool.analyzer.TS_analyzer import *
 from tstool.analyzer.Cpp_TS_analyzer import *
@@ -48,7 +49,6 @@ class RepoAudit:
 
         self.bug_type = args.bug_type
         self.is_reachable = args.is_reachable
-        self.use_incorrectness_logic = args.use_incorrectness_logic
 
         suffixs = []
         if self.language == "Cpp":
@@ -108,9 +108,19 @@ class RepoAudit:
                 self.temperature,
                 self.call_depth,
                 self.max_neural_workers,
-                use_incorrectness_logic=self.args.use_incorrectness_logic,
             )
             dfbscan_agent.start_scan()
+            
+        if self.args.scan_type == "incorrectness":
+            incorrectness_agent = IncorrectnessAgent(
+                self.project_path,
+                self.language,
+                self.ts_analyzer,
+                self.model_name,
+                self.temperature,
+                self.max_neural_workers,
+            )
+            incorrectness_agent.start_scan()
         return
 
     def travese_files(self, project_path: str, suffixs: List) -> None:
@@ -140,6 +150,9 @@ class RepoAudit:
                 err_messages.append("Error: Invalid bug type provided.")
         elif self.args.scan_type == "metascan":
             return (True, [])
+        elif self.args.scan_type == "incorrectness":
+            if not self.args.model_name:
+                err_messages.append("Error: --model-name is required for incorrectness.")
         else:
             err_messages.append("Error: Unknown scan type provided.")
         return (len(err_messages) == 0, err_messages)
@@ -152,7 +165,7 @@ def configure_args():
     parser.add_argument(
         "--scan-type",
         required=True,
-        choices=["metascan", "dfbscan"],
+        choices=["metascan", "dfbscan", "incorrectness"],
         help="The type of scan to perform.",
     )
     # Common parameters of metascan and dfbscan
@@ -180,11 +193,6 @@ def configure_args():
     parser.add_argument("--bug-type", help="Bug type for dfbscan)")
     parser.add_argument(
         "--is-reachable", action="store_true", help="Flag for bugscan reachability"
-    )
-    parser.add_argument(
-        "--use-incorrectness-logic", 
-        action="store_true", 
-        help="Use incorrectness logic ranker to identify highly-likely bugs"
     )
 
     args = parser.parse_args()
