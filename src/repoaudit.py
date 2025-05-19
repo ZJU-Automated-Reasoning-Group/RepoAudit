@@ -48,6 +48,7 @@ class RepoAudit:
 
         self.bug_type = args.bug_type
         self.is_reachable = args.is_reachable
+        self.use_incorrectness_logic = args.use_incorrectness_logic
 
         suffixs = []
         if self.language == "Cpp":
@@ -107,6 +108,7 @@ class RepoAudit:
                 self.temperature,
                 self.call_depth,
                 self.max_neural_workers,
+                use_incorrectness_logic=self.args.use_incorrectness_logic,
             )
             dfbscan_agent.start_scan()
         return
@@ -178,6 +180,11 @@ def configure_args():
     parser.add_argument("--bug-type", help="Bug type for dfbscan)")
     parser.add_argument(
         "--is-reachable", action="store_true", help="Flag for bugscan reachability"
+    )
+    parser.add_argument(
+        "--use-incorrectness-logic", 
+        action="store_true", 
+        help="Use incorrectness logic ranker to identify highly-likely bugs"
     )
 
     args = parser.parse_args()

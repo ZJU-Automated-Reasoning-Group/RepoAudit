@@ -1,7 +1,7 @@
 #!/bin/bash
 SCAN_TYPE=$1
-LANGUAGE=Python
-MODEL=claude-3.7
+LANGUAGE=Java
+MODEL=glm-4-flash
 BUG_TYPE=NPD
 PROJECT=toy
 
