@@ -45,7 +45,7 @@ class DFBScanAgent(Agent):
         model_name,
         temperature,
         call_depth,
-        max_neural_workers=1,
+        max_neural_workers=30,
         agent_id: int = 0,
     ) -> None:
         self.bug_type = bug_type

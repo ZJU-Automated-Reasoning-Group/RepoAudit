@@ -159,7 +159,7 @@ def configure_args():
     parser.add_argument(
         "--max-symbolic-workers",
         type=int,
-        default=10,
+        default=30,
         help="Max symbolic workers for parsing-based analysis",
     )
 

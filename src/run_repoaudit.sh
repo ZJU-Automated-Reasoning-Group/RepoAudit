@@ -7,12 +7,12 @@ PROJECT=toy
 
 # For demo/test run
 python3 repoaudit.py \
-  --language $LANGUAGE \
-  --model-name $MODEL \
-  --project-path ../benchmark/${LANGUAGE}/${PROJECT} \
-  --bug-type $BUG_TYPE \
-  --is-reachable \
-  --temperature 0.0 \
-  --scan-type dfbscan \
-  --call-depth 3 \
-  --max-neural-workers 30
+    --language $LANGUAGE \
+    --model-name $MODEL \
+    --project-path ../benchmark/${LANGUAGE}/${PROJECT} \
+    --bug-type $BUG_TYPE \
+    --is-reachable \
+    --temperature 0.0 \
+    --scan-type dfbscan \
+    --call-depth 3 \
+    --max-neural-workers 30
