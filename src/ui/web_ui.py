@@ -131,6 +131,7 @@ def display_results():
             "deepseek-chat",
             "deepseek-reasoner",
             "gemini",
+            "glm-4-flash",
         ],
     )
 
