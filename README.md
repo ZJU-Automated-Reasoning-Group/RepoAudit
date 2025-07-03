@@ -46,13 +46,12 @@ We are keeping implementing more agents and will open-source them very soon. Uti
    python build.py
    ```
 
-4. Configure the OpenAI API key. 
+4. Configure the OpenAI API key and Anthropic API key:
 
    ```sh
    export OPENAI_API_KEY=xxxxxx >> ~/.bashrc
+   export ANTHROPIC_API_KEY=xxxxxx >> ~/.bashrc
    ```
-
-   For Claude3.5, we use the model hosted by Amazon Bedrock. If you want to use Claude-3.5 and Claude-3.7, you may need to set up the environment first.
 
 
 ## Quick Start
@@ -76,8 +75,8 @@ We are keeping implementing more agents and will open-source them very soon. Uti
 
 ## Parallel Auditing Support
 
-For a large repository, a sequential analysis process may be quite time-consuming. To accelerate the analysis, you can choose parallel auditing. Specifically, you can set the option `--max-neural-workers` to a larger value. By default, this option is set to 6 for parallel auditing.
-Also, we have set the parsing-based analysis in a parallel mode by default. The default maximal number of workers is 10.
+For a large repository, a sequential analysis process may be quite time-consuming. To accelerate the analysis, you can choose parallel auditing. Specifically, you can set the option `--max-neural-workers` to a larger value. By default, this option is set to 30 for parallel auditing.
+Also, we have set the parsing-based analysis in a parallel mode by default, which is determined by the option `--max-symbolic-workers`. The default maximal number of workers is 30.
 
 ## Website, Paper, and Docs
 
@@ -95,6 +94,7 @@ If you want to know more details about the tool usage, project architecture, and
 
 ## License
 
+<<<<<<< HEAD
 This project is licensed under the **GNU General Public License v2.0 (GPLv2)**.  You are free to use, modify, and distribute the software under the terms of this license, provided that derivative works are also distributed under the same license.
 
 For full details, see the [LICENSE](LICENSE) file or visit the official license page: [https://www.gnu.org/licenses/old-licenses/gpl-2.0.html](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
@@ -103,3 +103,6 @@ For full details, see the [LICENSE](LICENSE) file or visit the official license 
 ## Related Work
 
 - https://github.com/seclab-ucr/BugLens-Code
+=======
+This project is licensed under [MIT license](LICENSE).
+>>>>>>> 80274a425c02b8dfd8b18f05a6323d441f49f79e
