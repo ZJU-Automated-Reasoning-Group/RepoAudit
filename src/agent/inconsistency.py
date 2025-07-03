@@ -16,10 +16,10 @@ from tstool.analyzer.Java_TS_analyzer import *
 from tstool.analyzer.Python_TS_analyzer import *
 
 from llmtool.LLM_utils import *
-from llmtool.incorrectness.assumption_identifier import *
-from llmtool.incorrectness.violation_analyzer import *
+from llmtool.inconsistency.assumption_identifier import *
+from llmtool.inconsistency.violation_analyzer import *
 
-from memory.semantic.incorrectness_state import *
+from memory.semantic.inconsistency_state import *
 from memory.syntactic.function import *
 from memory.syntactic.value import *
 
@@ -28,7 +28,7 @@ from ui.logger import *
 BASE_PATH = Path(__file__).resolve().parents[2]
 
 
-class IncorrectnessAgent(Agent):
+class InconsistencyAgent(Agent):
     def __init__(
         self,
         project_path,
@@ -52,16 +52,16 @@ class IncorrectnessAgent(Agent):
         self.lock = threading.Lock()
 
         with self.lock:
-            self.log_dir_path = f"{BASE_PATH}/log/incorrectness/{self.model_name}/{self.language}/{self.project_name}/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}-{agent_id}"
-            self.res_dir_path = f"{BASE_PATH}/result/incorrectness/{self.model_name}/{self.language}/{self.project_name}/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}-{agent_id}"
+            self.log_dir_path = f"{BASE_PATH}/log/inconsistency/{self.model_name}/{self.language}/{self.project_name}/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}-{agent_id}"
+            self.res_dir_path = f"{BASE_PATH}/result/inconsistency/{self.model_name}/{self.language}/{self.project_name}/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}-{agent_id}"
             if not os.path.exists(self.log_dir_path):
                 os.makedirs(self.log_dir_path)
-            self.logger = Logger(self.log_dir_path + "/" + "incorrectness.log")
+            self.logger = Logger(self.log_dir_path + "/" + "inconsistency.log")
 
             if not os.path.exists(self.res_dir_path):
                 os.makedirs(self.res_dir_path)
 
-        # LLM tools for incorrectness logic analysis
+        # LLM tools for inconsistency logic analysis
         self.assumption_identifier = AssumptionIdentifier(
             self.model_name,
             self.temperature,
@@ -78,7 +78,7 @@ class IncorrectnessAgent(Agent):
         )
 
         # Initialize state with empty lists - to be populated during analysis
-        self.state = IncorrectnessState([], [])
+        self.state = InconsistencyState([], [])
         return
 
     def identify_assumptions_and_assertions(self) -> None:
@@ -288,7 +288,7 @@ class IncorrectnessAgent(Agent):
         
         # Create a report
         bug_report = BugReport()
-        bug_report.bug_type = "Incorrectness"
+        bug_report.bug_type = "Inconsistency"
         bug_report.file_path = function_with_violation.file_path
         bug_report.function_name = function_with_violation.function_name
         bug_report.line_number = violation.line_number
@@ -372,9 +372,9 @@ class IncorrectnessAgent(Agent):
 
     def start_scan(self) -> None:
         """
-        Main entry point to start the incorrectness logic scan
+        Main entry point to start the inconsistency logic scan
         """
-        self.logger.print_log("Starting incorrectness logic scan")
+        self.logger.print_log("Starting inconsistency logic scan")
         
         # Phase 1: Identify assumptions and assertions
         self.identify_assumptions_and_assertions()
@@ -401,7 +401,7 @@ class IncorrectnessAgent(Agent):
         
         return
 
-    def get_agent_state(self) -> IncorrectnessState:
+    def get_agent_state(self) -> InconsistencyState:
         return self.state
 
     def get_log_files(self) -> List[str]:

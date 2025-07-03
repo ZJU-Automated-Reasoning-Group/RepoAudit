@@ -221,7 +221,7 @@ Only return the JSON object. Do not include any other text in your response.
 """
 
     def build_verification_system_prompt(self) -> str:
-        return f"""You are an expert code analyzer focusing on verifying potential incorrectness bugs across function boundaries.
+        return f"""You are an expert code analyzer focusing on verifying potential inconsistency bugs across function boundaries.
 Your task is to analyze {self.language} code to determine if a potential violation is a real violation.
 
 For verification, you need to:
@@ -244,7 +244,7 @@ Your analysis should be extremely thorough and precise. Provide a definitive ans
         violation_line: int
     ) -> str:
         return f"""
-Verify if the following potential violation is a real incorrectness bug:
+Verify if the following potential violation is a real inconsistency bug:
 
 Function with assumption: {function_with_assumption.function_name}
 ```{self.language}

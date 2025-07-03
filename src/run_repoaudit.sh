@@ -18,4 +18,4 @@ python3 repoaudit.py \
   --max-neural-workers 30
 
 
-# --scan-type incorrectness \
+# --scan-type inconsistency \

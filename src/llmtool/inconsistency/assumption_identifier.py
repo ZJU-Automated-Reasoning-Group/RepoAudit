@@ -63,7 +63,7 @@ class AssumptionIdentifier:
 
     def build_system_prompt(self) -> str:
         return f"""You are an expert code analyzer focusing on identifying implicit and explicit assumptions in source code. 
-Your task is to analyze {self.language} code and identify assumptions that could lead to incorrectness issues if violated.
+Your task is to analyze {self.language} code and identify assumptions that could lead to inconsistency issues if violated.
 
 Types of assumptions to look for:
 1. Null/None checking assumptions (e.g., parameters expected to be non-null)
@@ -87,7 +87,7 @@ Source code:
 {function_code}
 ```
 
-Please identify all assumptions in this code that could lead to incorrectness if violated. For each assumption:
+Please identify all assumptions in this code that could lead to inconsistency if violated. For each assumption:
 1. Describe the assumption precisely
 2. Identify the line number where this assumption is relevant
 3. Explain why violating this assumption would lead to a bug

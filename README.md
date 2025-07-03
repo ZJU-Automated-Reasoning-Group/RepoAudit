@@ -1,27 +1,23 @@
-# RepoAudit
+# RepoAudit++
 
-RepoAudit is a repo-level bug detector for general bugs. Currently, it supports the detection of diverse bug types (such as Null Pointer Dereference, Memory Leak, and Use After Free) in multiple programming languages (including C/C++, Java, Python, and Go). It leverages [LLMSCAN](https://github.com/PurCL/LLMSCAN) to parse the codebase and uses LLM to mimic the process of manual code auditing. Compared with existing code auditing tools, RepoAudit offers the following advantages:
+RepoAudit++ is a repo-level bug detector for general bugs. Currently, it supports the detection of diverse bug types (such as Null Pointer Dereference, Memory Leak, and Use After Free) in multiple programming languages (including C/C++, Java, Python, and Go). It leverages [LLMSCAN](https://github.com/PurCL/LLMSCAN) to parse the codebase and uses LLM to mimic the process of manual code auditing. Compared with existing code auditing tools, RepoAudit offers the following advantages:
 
 - 🛡️ **Compilation-Free Analysis**
 - 🌍 **Multi-Lingual Support**
 - 🐞 **Multiple Bug Type Detection**
 - ⚙️ **Customization Support**
 
-## News 📰
+## Agents in RepoAudit++
 
-**[May 2025]** 🎉 Our paper "RepoAudit: Automated Code Auditing with Multi-Agent LLM Framework" has been accepted at ICML 2025! 🏆
-
-**[March 2025]** RepoAudit has helped identify over 100 bugs in open-source projects this quarter!
-
-## Agents in RepoAudit
-
-RepoAudit is a multi-agent framework for code auditing. We offer two agent instances in our current version:
+RepoAudit++ is a multi-agent framework for code auditing. We offer two agent instances in our current version:
 
 - **MetaScanAgent** in `metascan.py`: Scan the project using tree-sitter–powered parsing-based analyzers and obtains the basic syntactic properties of the program.
 
 - **DFBScanAgent** in `dfbscan.py`: Perform inter-procedural data-flow analysis as described in this [preprint](https://arxiv.org/abs/2501.18160). It detects data-flow bugs, including source-must-not-reach-sink bugs (e.g., Null Pointer Dereference) and source-must-reach-sink bugs (e.g., Memory Leak).
 
-We are keeping implementing more agents and will open-source them very soon. Utilizing DFBScanAgent and other agents, we have discovered hundred of confirmed and fixed bugs in open-source community. You can refer to this [bug list](https://repoaudit-home.github.io/bugreports.html).
+We are keeping implementing more agents and will open-source them very soon. Utilizing DFBScanAgent and other agents, we have discovered hundred of confirmed and fixed bugs in open-source community. 
+
+You can refer to this [bug list](https://repoaudit-home.github.io/bugreports.html).
 
 ## Installation
 
@@ -94,7 +90,6 @@ If you want to know more details about the tool usage, project architecture, and
 
 ## License
 
-<<<<<<< HEAD
 This project is licensed under the **GNU General Public License v2.0 (GPLv2)**.  You are free to use, modify, and distribute the software under the terms of this license, provided that derivative works are also distributed under the same license.
 
 For full details, see the [LICENSE](LICENSE) file or visit the official license page: [https://www.gnu.org/licenses/old-licenses/gpl-2.0.html](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
@@ -103,6 +98,3 @@ For full details, see the [LICENSE](LICENSE) file or visit the official license 
 ## Related Work
 
 - https://github.com/seclab-ucr/BugLens-Code
-=======
-This project is licensed under [MIT license](LICENSE).
->>>>>>> 80274a425c02b8dfd8b18f05a6323d441f49f79e

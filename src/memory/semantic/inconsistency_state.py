@@ -6,7 +6,7 @@ from tstool.analyzer.TS_analyzer import *
 from typing import List, Tuple, Dict, Set
 
 
-class IncorrectnessState(State):
+class InconsistencyState(State):
     def __init__(self, assertion_points: List[Value], potential_violations: List[Value]) -> None:
         self.assertion_points = assertion_points
         self.potential_violations = potential_violations
@@ -128,4 +128,5 @@ class IncorrectnessState(State):
             for path in paths:
                 print(f"  Path: {path}")
             print("-------------------------------------")
+        print("=====================================\n")
         return 

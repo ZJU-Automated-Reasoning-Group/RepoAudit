@@ -4,7 +4,7 @@ import glob
 import sys
 from agent.metascan import *
 from agent.dfbscan import *
-from agent.incorrectness import *
+from agent.inconsistency import *
 
 from tstool.analyzer.TS_analyzer import *
 from tstool.analyzer.Cpp_TS_analyzer import *
@@ -112,8 +112,8 @@ class RepoAudit:
             )
             dfbscan_agent.start_scan()
             
-        if self.args.scan_type == "incorrectness":
-            incorrectness_agent = IncorrectnessAgent(
+        if self.args.scan_type == "inconsistency":
+            inconsistency_agent = InconsistencyAgent(
                 self.project_path,
                 self.language,
                 self.ts_analyzer,
@@ -121,7 +121,7 @@ class RepoAudit:
                 self.temperature,
                 self.max_neural_workers,
             )
-            incorrectness_agent.start_scan()
+            inconsistency_agent.start_scan()
         return
 
     
@@ -171,9 +171,9 @@ class RepoAudit:
                 err_messages.append("Error: Invalid bug type provided.")
         elif self.args.scan_type == "metascan":
             return (True, [])
-        elif self.args.scan_type == "incorrectness":
+        elif self.args.scan_type == "inconsistency":
             if not self.args.model_name:
-                err_messages.append("Error: --model-name is required for incorrectness.")
+                err_messages.append("Error: --model-name is required for inconsistency.")
         else:
             err_messages.append("Error: Unknown scan type provided.")
         return (len(err_messages) == 0, err_messages)
@@ -186,7 +186,7 @@ def configure_args():
     parser.add_argument(
         "--scan-type",
         required=True,
-        choices=["metascan", "dfbscan", "incorrectness"],
+        choices=["metascan", "dfbscan", "inconsistency"],
         help="The type of scan to perform.",
     )
     # Common parameters of metascan and dfbscan
