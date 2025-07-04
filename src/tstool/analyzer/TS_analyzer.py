@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 import tree_sitter
 from tree_sitter import Language
 from tqdm import tqdm
-import networkx as nx
+# import networkx as nx
 
 sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 

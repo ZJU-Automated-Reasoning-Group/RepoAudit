@@ -1,4 +1,4 @@
-black
+#black
 tree-sitter>=0.20.0,<0.22.0
 transformers
 torch
@@ -7,9 +7,8 @@ replicate
 openai
 google-generativeai
 tqdm
-networkx
+#networkx
 streamlit
-botocore
-boto3
-black
+#boto3
+#botocore
 zhipuai

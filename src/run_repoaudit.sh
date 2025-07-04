@@ -1,6 +1,6 @@
 #!/bin/bash
 SCAN_TYPE=$1
-LANGUAGE=Java
+LANGUAGE=Cpp
 MODEL=glm-4-flash
 BUG_TYPE=NPD
 PROJECT=toy

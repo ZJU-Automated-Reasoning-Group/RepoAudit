@@ -15,9 +15,10 @@ from functools import partial
 import threading
 
 import json
-from botocore.config import Config
-from botocore.exceptions import BotoCoreError, ClientError
-import boto3
+ # FIXME: an isue when installing botocore and boto3. I comment this function temporarily.
+#from botocore.config import Config
+#from botocore.exceptions import BotoCoreError, ClientError
+# import boto3
 from ui.logger import Logger
 
 
@@ -221,6 +222,9 @@ class LLM:
 
     def infer_with_claude_aws_bedrock(self, message):
         """Infer using the Claude model via AWS Bedrock"""
+        # FIXME: an issue when installing boto3. I comment this function temporarily.
+        raise NotImplementedError("AWS Bedrock is not supported")
+    
         timeout = 500
         model_input = [
             {
@@ -261,7 +265,6 @@ class LLM:
                 region_name="us-west-2",
                 config=Config(read_timeout=timeout),
             )
-
             response = (
                 client.invoke_model(
                     modelId=model_id, contentType="application/json", body=body
