@@ -34,7 +34,8 @@ class LLM:
         online_model_name: str,
         logger: Logger,
         temperature: float = 0.0,
-        system_role="You are a experienced programmer and good at understanding programs written in mainstream programming languages.",
+        system_role: str = "You are an experienced programmer and good at understanding programs written in mainstream programming languages.",
+        max_output_length: int = 4096,
     ) -> None:
         self.online_model_name = online_model_name
         self.encoding = tiktoken.encoding_for_model(
@@ -43,6 +44,7 @@ class LLM:
         self.temperature = temperature
         self.systemRole = system_role
         self.logger = logger
+        self.max_output_length = max_output_length
         return
 
     def infer(
@@ -58,6 +60,7 @@ class LLM:
             output = self.infer_with_o3_mini_model(message)
         elif "claude" in self.online_model_name:
             output = self.infer_with_claude_key(message)
+            # output = self.infer_with_claude_aws_bedrock(message)
         elif "deepseek" in self.online_model_name:
             output = self.infer_with_deepseek_model(message)
         else:
@@ -246,7 +249,7 @@ class LLM:
                     "max_tokens": self.max_output_length,
                     "thinking": {
                         "type": "enabled",
-                        "budget_tokens": 3072,
+                        "budget_tokens": 2048,
                     },
                     "anthropic_version": "bedrock-2023-05-31",
                 }
@@ -309,17 +312,17 @@ class LLM:
 
             # Determine model and settings based on version
             if "3.7" in self.online_model_name:
-                # Claude 3.7 with thinking mode enabled
+                # Claude 3.7 with thinking mode enabled by default
                 model_name = "claude-3-7-sonnet-20250219"
                 api_params = {
                     "model": model_name,
                     "messages": model_input,
                     "max_tokens": self.max_output_length,
                     "temperature": self.temperature,
-                    # "thinking": {
-                    #     "type": "enabled",
-                    #     "budget_tokens": 10000
-                    # },
+                    "thinking": {
+                        "type": "enabled",
+                        "budget_tokens": 2048
+                    },
                 }
             else:
                 # Claude 3.5 standard mode
