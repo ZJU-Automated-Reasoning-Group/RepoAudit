@@ -12,3 +12,4 @@ streamlit
 botocore
 boto3
 black
+anthropic
