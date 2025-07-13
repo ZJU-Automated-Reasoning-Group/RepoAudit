@@ -13,7 +13,7 @@
     "In summary, evaluate the condition of each sub-path, verify possible conflicts, and then decide whether the entire propagation path is reachable."
   ],
   "question_template": [
-    "Based on the execution of these functions, is the following bug propagation path reachable for BUG_TYPE?",
+    "Based on the execution of these functions, is the following bug propagation path reachable for <BUG_TYPE>?",
     "```",
     "<PATH>",
     "```",
