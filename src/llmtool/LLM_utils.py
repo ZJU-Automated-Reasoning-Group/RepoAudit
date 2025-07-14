@@ -27,8 +27,9 @@ class LLM:
     An online inference model using different LLMs:
     - Gemini
     - OpenAI: GPT-3.5, GPT-4, o3-mini
-    - DeepSeek: V3, R1
-    - Claude: 3.5 and 3.7
+    - DeepSeek: V3, R1 (uses OpenAI-compatible API)
+    - Claude: 3.5 and 3.7 (via API key or AWS Bedrock)
+    - GLM: Zhipu AI models
     """
 
     def __init__(
@@ -187,9 +188,14 @@ class LLM:
 
     def infer_with_deepseek_model(self, message):
         """
-        Infer using the DeepSeek model
+        Infer using the DeepSeek model (V3, R1, etc.)
+        DeepSeek uses OpenAI-compatible API format
         """
-        api_key = os.environ.get("DEEPSEEK_API_KEY2")
+        api_key = os.environ.get("DEEPSEEK_API_KEY")
+        if not api_key:
+            self.logger.print_log("DeepSeek API key not found in environment variables")
+            return ""
+            
         model_input = [
             {
                 "role": "system",
@@ -199,7 +205,7 @@ class LLM:
         ]
 
         def call_api():
-            client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+            client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
             response = client.chat.completions.create(
                 model=self.online_model_name,
                 messages=model_input,
@@ -215,7 +221,43 @@ class LLM:
                 if output:
                     return output
             except Exception as e:
-                self.logger.print_log(f"API error: {e}")
+                self.logger.print_log(f"DeepSeek API error: {e}")
+            time.sleep(2)
+
+        return ""
+
+    def infer_with_claude_key(self, message):
+        """
+        Infer using the Claude model with API key
+        """
+        api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("CLAUDE_API_KEY")
+        if not api_key:
+            self.logger.print_log("Claude API key not found in environment variables")
+            return ""
+            
+        model_input = [
+            {"role": "user", "content": f"{self.systemRole}\n\n{message}"}
+        ]
+
+        def call_api():
+            client = anthropic.Anthropic(api_key=api_key)
+            response = client.messages.create(
+                model=self.online_model_name,
+                max_tokens=4096,
+                temperature=self.temperature,
+                messages=model_input
+            )
+            return response.content[0].text
+
+        tryCnt = 0
+        while tryCnt < 5:
+            tryCnt += 1
+            try:
+                output = self.run_with_timeout(call_api, timeout=300)
+                if output:
+                    return output
+            except Exception as e:
+                self.logger.print_log(f"Claude API error: {e}")
             time.sleep(2)
 
         return ""

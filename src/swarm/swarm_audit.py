@@ -6,6 +6,7 @@ LLM x 漏洞挖掘 - 内存安全漏洞静态审计系统
 
 import sys
 import os
+import argparse
 from pathlib import Path
 
 # Add src directory to Python path
@@ -15,7 +16,7 @@ sys.path.insert(0, str(BASE_PATH / "src"))
 import json
 import time
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -31,10 +32,10 @@ class VulnType(Enum):
 
 
 class Severity(Enum):
-    CRITICAL = "严重"
-    HIGH = "高危"
-    MEDIUM = "中危"
-    LOW = "低危"
+    CRITICAL = "Critical"
+    HIGH = "High"
+    MEDIUM = "Medium"
+    LOW = "Low"
 
 
 @dataclass
@@ -70,34 +71,34 @@ class VulnerabilityAnalyzer(LLMTool):
     
     def _get_prompt(self, input: MemoryAuditInput) -> str:
         bug_descriptions = {
-            VulnType.NPD: "空指针解引用 - 访问NULL指针",
-            VulnType.UAF: "释放后使用 - 使用已释放的内存",
-            VulnType.BOF: "缓冲区溢出 - 写入超出缓冲区边界",
-            VulnType.ML: "内存泄漏 - 分配的内存未释放"
+            VulnType.NPD: "Null Pointer Dereference - accessing NULL pointer",
+            VulnType.UAF: "Use-After-Free - using freed memory",
+            VulnType.BOF: "Buffer Overflow - writing beyond buffer boundaries",
+            VulnType.ML: "Memory Leak - allocated memory not freed"
         }
         
-        return f"""你是安全专家，需要检查{input.language}代码中的{bug_descriptions[input.bug_type]}漏洞。
+        return f"""You are a security expert who needs to check {input.language} code for {bug_descriptions[input.bug_type]} vulnerabilities.
 
-代码：
+Code:
 ```{input.language}
 {input.code}
 ```
 
-请仔细分析代码，只关注{input.bug_type.value}类型的漏洞。
+Please carefully analyze the code and focus only on {input.bug_type.value} type vulnerabilities.
 
-返回JSON格式：
+Return JSON format:
 {{
     "findings": [
         {{
             "severity": "CRITICAL|HIGH|MEDIUM|LOW",
-            "description": "详细描述发现的问题",
+            "description": "Detailed description of the issue found",
             "line_range": "L1-L3",
             "confidence": 0.85
         }}
     ]
 }}
 
-如果没有发现问题，返回空数组。只返回JSON，不要其他内容。"""
+If no issues are found, return an empty array. Only return JSON, no other content."""
 
     def _parse_response(self, response: str, input: MemoryAuditInput = None) -> MemoryAuditOutput:
         try:
@@ -144,10 +145,13 @@ class VulnerabilityAnalyzer(LLMTool):
 
 
 class MemoryAuditor:
-    def __init__(self, bug_type: VulnType, language: str = "C", temperature: float = 0.0):
+    def __init__(self, bug_type: VulnType, language: str = "C", temperature: float = 0.0, 
+                 model_name: str = "deepseek-chat", max_workers: int = 3):
         self.bug_type = bug_type
         self.language = language
         self.temperature = temperature
+        self.model_name = model_name
+        self.max_workers = max_workers
         
         # Initialize logger
         log_dir = f"{BASE_PATH}/log/swarm_audit/{bug_type.name}/{time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime())}"
@@ -156,13 +160,13 @@ class MemoryAuditor:
         
         # Initialize multiple models for the same bug type
         self.agents = [
-            ("glm-4-flash", "安全专家"),
-            ("glm-4-flash", "静态分析专家"),
-            ("glm-4-flash", "资深程序员")
-        ]
+            (self.model_name, "Security Expert"),
+            (self.model_name, "Static Analysis Expert"),
+            (self.model_name, "Senior Programmer")
+        ][:self.max_workers]
     
     def judge(self, all_findings: List[Finding]) -> List[Finding]:
-        """综合判断 - 至少2个模型同意才确认"""
+        """Comprehensive judgment - at least 2 models must agree to confirm"""
         if len(all_findings) < 2:
             return []
         
@@ -176,14 +180,14 @@ class MemoryAuditor:
         
         final_findings = []
         for line_range, findings in grouped.items():
-            if len(findings) >= 2:  # 至少2个模型检测到
+            if len(findings) >= 2:  # At least 2 models detected
                 avg_confidence = sum(f.confidence for f in findings) / len(findings)
                 max_severity = max(findings, key=lambda x: list(Severity).index(x.severity)).severity
                 
                 final_findings.append(Finding(
                     vuln_type=self.bug_type,
                     severity=max_severity,
-                    description=f"多模型确认：{findings[0].description}",
+                    description=f"Multi-model confirmation: {findings[0].description}",
                     line_range=line_range,
                     confidence=min(0.99, avg_confidence + 0.1),
                     agent_id="Judge"
@@ -192,13 +196,13 @@ class MemoryAuditor:
         return final_findings
     
     def analyze(self, code: str) -> Dict:
-        """分析代码"""
-        self.logger.print_console(f"🔍 开始{self.bug_type.value}检测...\n")
+        """Analyze code"""
+        self.logger.print_console(f"🔍 Starting {self.bug_type.value} detection...\n")
         
         audit_input = MemoryAuditInput(code, self.bug_type, self.language)
         all_findings = []
         
-        # 并行调用多个模型
+        # Parallel invocation of multiple models
         with ThreadPoolExecutor(max_workers=len(self.agents)) as executor:
             futures = {}
             for model_name, agent_name in self.agents:
@@ -214,14 +218,14 @@ class MemoryAuditor:
                     output = future.result()
                     if output and output.findings:
                         all_findings.extend(output.findings)
-                        self.logger.print_console(f"✅ {agent_name} 发现{len(output.findings)}个问题")
+                        self.logger.print_console(f"✅ {agent_name} found {len(output.findings)} issues")
                     else:
-                        self.logger.print_console(f"✅ {agent_name} 未发现问题")
+                        self.logger.print_console(f"✅ {agent_name} found no issues")
                 except Exception as e:
                     self.logger.print_log(f"Error in {agent_name}: {e}")
-                    self.logger.print_console(f"❌ {agent_name} 执行失败")
+                    self.logger.print_console(f"❌ {agent_name} execution failed")
         
-        # 综合判断
+        # Comprehensive judgment
         final_findings = self.judge(all_findings)
         
         return {
@@ -230,26 +234,161 @@ class MemoryAuditor:
             "confirmed_findings": final_findings
         }
 
-def main():
-    # 示例：检测UAF漏洞
-    code = """
-    void example() {
-        char *ptr = malloc(100);
-        *ptr = 'A';
-        free(ptr);
-        *ptr = 'B';  // UAF here
-    }
-    """
+def configure_args():
+    parser = argparse.ArgumentParser(
+        description="SwarmAudit: Multi-model vulnerability detection system for memory safety issues."
+    )
+    parser.add_argument(
+        "--bug-type",
+        required=True,
+        choices=["NPD", "UAF", "BOF", "ML"],
+        help="Bug type to detect (NPD: Null Pointer Dereference, UAF: Use-After-Free, BOF: Buffer Overflow, ML: Memory Leak)",
+    )
+    parser.add_argument(
+        "--language",
+        default="C",
+        choices=["C", "Cpp", "Java", "Python", "Go"],
+        help="Programming language of the code to analyze",
+    )
+    parser.add_argument(
+        "--model-name",
+        default="deepseek-chat",
+        help="The name of LLM model to use for analysis",
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="Temperature for LLM inference (0.0-1.0)",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=3,
+        help="Maximum number of parallel workers (models) to use",
+    )
+    parser.add_argument(
+        "--code-file",
+        help="Path to code file to analyze (if not provided, uses example code)",
+    )
+    parser.add_argument(
+        "--output-format",
+        choices=["console", "json"],
+        default="console",
+        help="Output format for results",
+    )
+
+    args = parser.parse_args()
+    return args
+
+
+def validate_inputs(args: argparse.Namespace) -> Tuple[bool, List[str]]:
+    """Validate command line arguments"""
+    errors = []
     
-    auditor = MemoryAuditor(VulnType.UAF)
+    # Validate temperature range
+    if not (0.0 <= args.temperature <= 1.0):
+        errors.append("Temperature must be between 0.0 and 1.0")
+    
+    # Validate max_workers
+    if args.max_workers < 1 or args.max_workers > 10:
+        errors.append("Max workers must be between 1 and 10")
+    
+    # Validate code file if provided
+    if args.code_file and not os.path.exists(args.code_file):
+        errors.append(f"Code file not found: {args.code_file}")
+    
+    return len(errors) == 0, errors
+
+
+def get_example_code(bug_type: VulnType, language: str) -> str:
+    """Get example code from benchmark directory"""
+    benchmark_map = {
+        VulnType.UAF: {"Cpp": "benchmark/Cpp/toy/UAF/uaf-case01.cpp"},
+        VulnType.NPD: {
+            "Cpp": "benchmark/Cpp/toy/NPD/npd-case01.cpp",
+            "Java": "benchmark/Java/toy/NPD/TestCase1.java",
+            "Python": "benchmark/Python/toy/NPD/case01.py",
+            "Go": "benchmark/Go/toy/nil_case01.go"
+        },
+        VulnType.ML: {"Cpp": "benchmark/Cpp/toy/MLK/mlk-case01.cpp"},
+        VulnType.BOF: {"Go": "benchmark/Go/toy/bof_case01.go"}
+    }
+    
+    file_path = benchmark_map.get(bug_type, {}).get(language)
+    if not file_path:
+        file_path = list(benchmark_map.get(bug_type, {}).values())[0]
+    
+    try:
+        with open(f"{BASE_PATH}/{file_path}", 'r', encoding='utf-8') as f:
+            return f.read()
+    except:
+        return f"// Example code for {bug_type.value} in {language}"
+
+
+def main():
+    args = configure_args()
+    
+    # Validate inputs
+    is_valid, errors = validate_inputs(args)
+    if not is_valid:
+        print("❌ Input validation failed:")
+        for error in errors:
+            print(f"  - {error}")
+        sys.exit(1)
+    
+    # Convert bug type string to enum
+    bug_type = VulnType[args.bug_type]
+    
+    # Get code to analyze
+    if args.code_file:
+        try:
+            with open(args.code_file, 'r', encoding='utf-8') as f:
+                code = f.read()
+            print(f"📂 Analyzing code from: {args.code_file}")
+        except Exception as e:
+            print(f"❌ Error reading file {args.code_file}: {e}")
+            sys.exit(1)
+    else:
+        code = get_example_code(bug_type, args.language)
+        print(f"📝 Using example code for {args.bug_type} in {args.language}")
+    
+    # Create auditor and analyze
+    auditor = MemoryAuditor(
+        bug_type=bug_type,
+        language=args.language,
+        temperature=args.temperature,
+        model_name=args.model_name,
+        max_workers=args.max_workers
+    )
+    
     report = auditor.analyze(code)
     
-    print(f"\n📊 {report['bug_type']}检测完成")
-    print(f"📋 发现{report['total_findings']}个初步问题，确认{len(report['confirmed_findings'])}个\n")
-    
-    for f in report['confirmed_findings']:
-        print(f"[{f.severity.value}] {f.description}")
-        print(f"  位置: {f.line_range}, 置信度: {f.confidence:.1%}\n")
+    # Output results
+    if args.output_format == "json":
+        output = {
+            "bug_type": report["bug_type"],
+            "total_findings": report["total_findings"],
+            "confirmed_findings": [
+                {
+                    "severity": f.severity.value,
+                    "description": f.description,
+                    "line_range": f.line_range,
+                    "confidence": f.confidence,
+                    "agent_id": f.agent_id
+                }
+                for f in report["confirmed_findings"]
+            ]
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        print(f"\n📊 {report['bug_type']} detection completed")
+        print(f"📋 Found {report['total_findings']} preliminary issues, confirmed {len(report['confirmed_findings'])}\n")
+        
+        for f in report['confirmed_findings']:
+            print(f"[{f.severity.value}] {f.description}")
+            print(f"  Location: {f.line_range}, Confidence: {f.confidence:.1%}\n")
+
 
 if __name__ == "__main__":
     main()

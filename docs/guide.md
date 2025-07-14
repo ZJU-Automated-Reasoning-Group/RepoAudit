@@ -23,12 +23,21 @@
    python build.py
    ```
 
-4. Configure the OpenAI API key and Anthropic API key:
+4. Configure the API keys for supported LLM providers:
 
    ```sh
    export OPENAI_API_KEY=xxxxxx >> ~/.bashrc
    export ANTHROPIC_API_KEY=xxxxxx >> ~/.bashrc
+   export DEEPSEEK_API_KEY=xxxxxx >> ~/.bashrc
+   export GLM_API_KEY=xxxxxx >> ~/.bashrc
    ```
+
+   **Supported Models:**
+   - OpenAI: `gpt-3.5-turbo`, `gpt-4`, `gpt-4o`, `o3-mini`
+   - DeepSeek: `deepseek-chat`, `deepseek-coder`, `deepseek-r1` (uses OpenAI-compatible API)
+   - Claude: `claude-3-5-sonnet-20241022`, `claude-3-haiku-20240307`
+   - Gemini: `gemini-pro`, `gemini-1.5-pro`
+   - GLM: `glm-4`, `glm-4-plus`
 
 
 ## Quick Start

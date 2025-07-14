@@ -42,11 +42,13 @@ You can refer to this [bug list](https://repoaudit-home.github.io/bugreports.htm
    python build.py
    ```
 
-4. Configure the OpenAI API key and Anthropic API key:
+4. Configure the API keys for supported LLM providers:
 
    ```sh
    export OPENAI_API_KEY=xxxxxx >> ~/.bashrc
    export ANTHROPIC_API_KEY=xxxxxx >> ~/.bashrc
+   export DEEPSEEK_API_KEY=xxxxxx >> ~/.bashrc
+   export GLM_API_KEY=xxxxxx >> ~/.bashrc
    ```
 
 
