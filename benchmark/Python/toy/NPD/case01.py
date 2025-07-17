@@ -9,7 +9,7 @@ def test1_get_object(flag: bool):
     if flag:
         return MyObject("hello")
     else:
-        return None, 1, 2
+        return None
 
 
 def test1_process_object(obj: MyObject):
