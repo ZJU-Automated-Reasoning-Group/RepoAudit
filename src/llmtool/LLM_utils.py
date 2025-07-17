@@ -37,7 +37,8 @@ class LLM:
         online_model_name: str,
         logger: Logger,
         temperature: float = 0.0,
-        system_role="You are a experienced programmer and good at understanding programs written in mainstream programming languages.",
+        system_role: str = "You are an experienced programmer and good at understanding programs written in mainstream programming languages.",
+        max_output_length: int = 4096,
     ) -> None:
         self.online_model_name = online_model_name
         self.encoding = tiktoken.encoding_for_model(
@@ -46,6 +47,7 @@ class LLM:
         self.temperature = temperature
         self.systemRole = system_role
         self.logger = logger
+        self.max_output_length = max_output_length
         return
 
     def infer(
@@ -61,6 +63,7 @@ class LLM:
             output = self.infer_with_o3_mini_model(message)
         elif "claude" in self.online_model_name:
             output = self.infer_with_claude_key(message)
+            # output = self.infer_with_claude_aws_bedrock(message)
         elif "deepseek" in self.online_model_name:
             output = self.infer_with_deepseek_model(message)
         elif "glm" in self.online_model_name:
@@ -295,7 +298,7 @@ class LLM:
                     "max_tokens": self.max_output_length,
                     "thinking": {
                         "type": "enabled",
-                        "budget_tokens": 3072,
+                        "budget_tokens": 2048,
                     },
                     "anthropic_version": "bedrock-2023-05-31",
                 }

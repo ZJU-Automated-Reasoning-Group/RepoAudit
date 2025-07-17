@@ -9,6 +9,8 @@ google-generativeai
 tqdm
 #networkx
 streamlit
-#boto3
 #botocore
+#boto3
+#black
+anthropic
 zhipuai

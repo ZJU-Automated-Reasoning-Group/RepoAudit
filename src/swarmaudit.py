@@ -10,7 +10,7 @@ import argparse
 from pathlib import Path
 
 # Add src directory to Python path
-BASE_PATH = Path(__file__).resolve().parents[2]
+BASE_PATH = Path(__file__).resolve().parent.parent  # Go up one level from src/ to repo root
 sys.path.insert(0, str(BASE_PATH / "src"))
 
 import json
@@ -105,6 +105,9 @@ If no issues are found, return an empty array. Only return JSON, no other conten
             # Clean the response to extract JSON
             response = response.strip()
             
+            # Log the raw response for debugging
+            self.logger.print_log(f"Raw response from {self.agent_id}: {response}")
+            
             # Remove code block markers if present
             if "```json" in response:
                 start = response.find("```json") + 7
@@ -121,6 +124,7 @@ If no issues are found, return an empty array. Only return JSON, no other conten
             
             # Skip empty responses
             if not response:
+                self.logger.print_log(f"{self.agent_id}: Empty response after cleaning")
                 return MemoryAuditOutput([])
             
             # Parse JSON
@@ -137,6 +141,8 @@ If no issues are found, return an empty array. Only return JSON, no other conten
                     agent_id=self.agent_id
                 )
                 findings.append(finding)
+            
+            self.logger.print_log(f"{self.agent_id}: Parsed {len(findings)} findings")
             return MemoryAuditOutput(findings)
         except Exception as e:
             self.logger.print_log(f"Error parsing {self.agent_id} response: {e}")
@@ -320,9 +326,12 @@ def get_example_code(bug_type: VulnType, language: str) -> str:
         file_path = list(benchmark_map.get(bug_type, {}).values())[0]
     
     try:
-        with open(f"{BASE_PATH}/{file_path}", 'r', encoding='utf-8') as f:
+        full_path = BASE_PATH / file_path
+        print(f"📍 Loading example from: {full_path}")
+        with open(full_path, 'r', encoding='utf-8') as f:
             return f.read()
-    except:
+    except Exception as e:
+        print(f"❌ Error loading example code: {e}")
         return f"// Example code for {bug_type.value} in {language}"
 
 
