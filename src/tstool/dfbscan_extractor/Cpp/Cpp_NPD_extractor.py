@@ -26,16 +26,17 @@ class Cpp_NPD_Extractor(DFBScanExtractor):
         sources = []
         for node in nodes:
             is_seed_node = False
-            if node.type == "call_expression":
-                for child in node.children:
-                    if child.type == "identifier":
-                        name = source_code[child.start_byte : child.end_byte]
-                        if name in spec_apis:
-                            is_seed_node = True
-            else:
-                for child in node.children:
-                    if child.type == "null":
-                        is_seed_node = True
+            # Disable the return value of malloc to be a seed node
+            # if node.type == "call_expression":
+            #     for child in node.children:
+            #         if child.type == "identifier":
+            #             name = source_code[child.start_byte : child.end_byte]
+            #             if name in spec_apis:
+            #                 is_seed_node = True
+            
+            for child in node.children:
+                if child.type == "null":
+                    is_seed_node = True
 
             if is_seed_node:
                 line_number = source_code[: node.start_byte].count("\n") + 1
