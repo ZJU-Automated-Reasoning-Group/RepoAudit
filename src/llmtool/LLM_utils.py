@@ -319,10 +319,7 @@ class LLM:
                     "messages": model_input,
                     "max_tokens": self.max_output_length,
                     "temperature": self.temperature,
-                    "thinking": {
-                        "type": "enabled",
-                        "budget_tokens": 2048
-                    },
+                    "thinking": {"type": "enabled", "budget_tokens": 2048},
                 }
             else:
                 # Claude 3.5 standard mode
