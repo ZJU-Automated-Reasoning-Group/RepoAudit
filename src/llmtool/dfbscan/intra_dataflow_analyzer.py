@@ -180,6 +180,8 @@ class IntraDataFlowAnalyzer(LLMTool):
         for single_path in paths:
             reachable_values_per_path = set()
             for detail in single_path["propagation_details"]:
+                if not detail["line"].isdigit():
+                    continue
                 line_number = int(detail["line"]) + start_line_number - 1
                 if detail["type"] == "Argument":
                     reachable_values_per_path.add(
