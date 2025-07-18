@@ -112,7 +112,6 @@ class DFBScanAgent(Agent):
         elif self.language == "Go":
             if self.bug_type == "NPD":
                 return Go_NPD_Extractor(self.ts_analyzer)
-        # TODO: otherwise, sythesize the extractor
         return None
 
     def __update_worklist(
@@ -327,17 +326,20 @@ class DFBScanAgent(Agent):
             path_with_unknown_status (List[Value], optional):
                 The propagation path accumulated so far.
         """
+        reachable_values_snapshot = self.state.reachable_values_per_path
+        external_match_snapshot = self.state.external_value_match
+        
         # If no propagation information exists for the current value, stop further processing.
         if (
-            current_value_with_context not in self.state.reachable_values_per_path
-            and current_value_with_context not in self.state.external_value_match
+            current_value_with_context not in reachable_values_snapshot
+            and current_value_with_context not in external_match_snapshot
         ):
             return
 
         # Process if the current value has reachable paths.
-        if current_value_with_context in self.state.reachable_values_per_path:
+        if current_value_with_context in reachable_values_snapshot:
             reachable_values_paths: List[Set[Tuple[Value, CallContext]]] = (
-                self.state.reachable_values_per_path[current_value_with_context]
+                reachable_values_snapshot[current_value_with_context]
             )
             for path_set in reachable_values_paths:
                 if not path_set:
@@ -361,8 +363,8 @@ class DFBScanAgent(Agent):
                         ValueLabel.OUT,
                     }:
                         # For other propagation types, check further external matches.
-                        if (value, ctx) in self.state.external_value_match:
-                            for value_next, ctx_next in self.state.external_value_match[
+                        if (value, ctx) in external_match_snapshot:
+                            for value_next, ctx_next in external_match_snapshot[
                                 (value, ctx)
                             ]:
                                 self.__collect_potential_buggy_paths(
@@ -372,8 +374,8 @@ class DFBScanAgent(Agent):
                                 )
 
         # Process if the current value has external value matches.
-        if current_value_with_context in self.state.external_value_match:
-            for value_next, ctx_next in self.state.external_value_match[
+        if current_value_with_context in external_match_snapshot:
+            for value_next, ctx_next in external_match_snapshot[
                 current_value_with_context
             ]:
                 value, _ = current_value_with_context
@@ -638,13 +640,20 @@ class DFBScanAgent(Agent):
 
         # Validate buggy paths and generate bug reports
         for buggy_path in self.state.potential_buggy_paths[src_value].values():
+            values_to_functions = {
+                value: self.ts_analyzer.get_function_from_localvalue(value)
+                for value in buggy_path
+            }
+            
+            relevant_functions = values_to_functions.values()
+            
+            if self.state.check_existence(src_value, relevant_functions):
+                continue
+            
             input = PathValidatorInput(
                 self.bug_type,
                 buggy_path,
-                {
-                    value: self.ts_analyzer.get_function_from_localvalue(value)
-                    for value in buggy_path
-                },
+                values_to_functions,
             )
             output: PathValidatorOutput = self.path_validator.invoke(input)
 
@@ -667,7 +676,9 @@ class DFBScanAgent(Agent):
                     for bug_report_id, bug in self.state.bug_reports.items()
                 }
 
-                with open(self.res_dir_path + "/detect_info.json", "w") as bug_info_file:
+                with open(
+                    self.res_dir_path + "/detect_info.json", "w"
+                ) as bug_info_file:
                     json.dump(bug_report_dict, bug_info_file, indent=4)
         return
 
