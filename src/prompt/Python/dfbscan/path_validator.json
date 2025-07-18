@@ -13,7 +13,7 @@
       "In summary, assess the conditions in every sub-path, check for conflicts, and decide whether the entire propagation path is reachable."
     ],
     "question_template": [
-      "When these functions are executed, is the following data-flow propagation path reachable for BUG_TYPE?",
+      "When these functions are executed, does the following data-flow propagation path cause the <BUG_TYPE> bug?",
       "```",
       "<PATH>",
       "```",
@@ -35,9 +35,10 @@
       "def get_element(array, index):",
       "    return array[index]",
       "```",
-      "Propagation Path: 'array' at line 2 in get_array --> 'array' used at line 2 in get_element",
-      "Explanation: In get_array, if length <= 0, array remains None and is returned. In get_element, a None array would trigger a TypeError when accessed at line 2. However, when length > 0, the array is non-None. Since the conditions for array being None and non-None conflict, this propagation path is unreachable.",
-      "Answer: No",
+      "Does the following propagation path cause the NPD bug?",
+      "'array' at line 2 in get_array --> 'array' used at line 2 in get_element",
+      "Explanation: In get_array, if length <= 0, array remains None and is returned. In get_element, a None array would trigger a TypeError when accessed at line 2. However, when length > 0, the array is non-None. Since the conditions for array being None and non-None conflict, this propagation path is unreachable and does not cause the NPD bug.",
+      "Answer: No.",
       "",
       "Example 2:",
       "User:",
@@ -52,9 +53,10 @@
       "    my_obj = foo(None)",
       "    my_obj.to_string()",
       "```",
-      "Propagation Path: Parameter 'obj' in foo --> foo returns None --> my_obj assigned None in bar, which then gets dereferenced causing a method call on None",
-      "Explanation: The function foo returns None when passed a None input. In bar, this leads to my_obj being None, which in turn causes a TypeError when calling to_string(). As there is no conflicting branch condition preventing this case, the propagation path is reachable.",
-      "Answer: Yes"
+      "Does the following propagation path cause the NPD bug?",
+      "Parameter 'obj' in foo --> foo returns None --> my_obj assigned None in bar, which then gets dereferenced causing a method call on None",
+      "Explanation: The function foo returns None when passed a None input. In bar, this leads to my_obj being None, which in turn causes a TypeError when calling to_string(). As there is no conflicting branch condition preventing this case, the propagation path is reachable and causes the NPD bug.",
+      "Answer: Yes."
     ],
     "additional_fact": [
       "Additional details may include whether specific lines fall within if-statements and the corresponding line numbers for those conditions.",
