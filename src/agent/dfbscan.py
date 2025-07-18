@@ -328,7 +328,7 @@ class DFBScanAgent(Agent):
         """
         reachable_values_snapshot = self.state.reachable_values_per_path
         external_match_snapshot = self.state.external_value_match
-        
+
         # If no propagation information exists for the current value, stop further processing.
         if (
             current_value_with_context not in reachable_values_snapshot
@@ -644,12 +644,12 @@ class DFBScanAgent(Agent):
                 value: self.ts_analyzer.get_function_from_localvalue(value)
                 for value in buggy_path
             }
-            
+
             relevant_functions = values_to_functions.values()
-            
+
             if self.state.check_existence(src_value, relevant_functions):
                 continue
-            
+
             input = PathValidatorInput(
                 self.bug_type,
                 buggy_path,

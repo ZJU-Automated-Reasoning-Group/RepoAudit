@@ -80,7 +80,7 @@ class DFBScanState(State):
                 return
             # Add new unique bug report
             self._bug_reports[self._total_bug_count] = bug_report
-            
+
         with self._total_bug_count_lock:
             self._total_bug_count += 1
 
@@ -127,23 +127,22 @@ class DFBScanState(State):
         """
         with self._total_bug_count_lock:
             return self._total_bug_count
-        
+
     def check_existence(self, src: Value, relevant_functions: set[Function]) -> bool:
         """
         Check if the bug report with the same src and relevant functions already exists
         """
         with self._bug_reports_lock:
-            relevant_functions_ids = [function.function_id for function in relevant_functions]
+            relevant_functions_ids = [
+                function.function_id for function in relevant_functions
+            ]
             hash_value = hash((src, tuple(sorted(list(relevant_functions_ids)))))
             is_exist = False
             for report in self._bug_reports.values():
                 if hash(report) == hash_value:
                     is_exist = True
                     break
-            if is_exist:
-                return True
-            else:
-                return False
+            return is_exist
 
     def print_reachable_values_per_path(self) -> None:
         """

@@ -33,7 +33,7 @@ class Cpp_NPD_Extractor(DFBScanExtractor):
             #             name = source_code[child.start_byte : child.end_byte]
             #             if name in spec_apis:
             #                 is_seed_node = True
-            
+
             for child in node.children:
                 if child.type == "null":
                     is_seed_node = True
