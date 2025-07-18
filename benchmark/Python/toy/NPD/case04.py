@@ -3,7 +3,7 @@ class Test4_Example:
         self.value = value
     
     def get_value(self):
-        return self.value.attr  # Null dereference
+        return self.value.attr
 
 def test4_inner_call(obj):
     return obj.get_value()
