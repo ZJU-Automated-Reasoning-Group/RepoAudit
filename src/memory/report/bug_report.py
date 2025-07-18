@@ -53,3 +53,12 @@ class BugReport:
 
     def __str__(self):
         return str(self.to_dict())
+    
+    def __hash__(self) -> int:
+        relevant_functions_ids = [function.function_id for function in self.relevant_functions.values()]
+        return hash((self.buggy_value, tuple(sorted(relevant_functions_ids))))
+    
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, BugReport):
+            return False
+        return hash(self) == hash(value)
