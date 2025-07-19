@@ -21,7 +21,7 @@ class API:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, API):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self.api_name == other.api_name and self.api_para_num == other.api_para_num
         )
