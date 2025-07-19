@@ -39,7 +39,7 @@ class RepoAudit:
 
         self.project_path = args.project_path
         self.language = args.language
-        self.code_in_files = {}
+        self.code_in_files: Dict[str, str] = {}
 
         self.model_name = args.model_name
         self.temperature = args.temperature
@@ -65,6 +65,7 @@ class RepoAudit:
         # Load all files with the specified suffix in the project path
         self.traverse_files(self.project_path, suffixs)
 
+        self.ts_analyzer: TSAnalyzer
         if self.language == "Cpp":
             self.ts_analyzer = Cpp_TSAnalyzer(
                 self.code_in_files, self.language, self.max_symbolic_workers
@@ -92,8 +93,6 @@ class RepoAudit:
                 self.project_path,
                 self.language,
                 self.ts_analyzer,
-                self.model_name,
-                self.temperature,
             )
             metascan_pipeline.start_scan()
 

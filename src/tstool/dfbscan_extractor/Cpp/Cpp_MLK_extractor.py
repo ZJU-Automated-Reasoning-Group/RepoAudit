@@ -1,8 +1,6 @@
 from tstool.analyzer.TS_analyzer import *
 from tstool.analyzer.Cpp_TS_analyzer import *
 from ..dfbscan_extractor import *
-import tree_sitter
-import argparse
 
 
 class Cpp_MLK_Extractor(DFBScanExtractor):
@@ -36,7 +34,7 @@ class Cpp_MLK_Extractor(DFBScanExtractor):
             "vasprintf",
             "getline",
         }
-        spec_apis = {}  # specific user-defined APIs that allocate memory
+        # spec_apis = {}  # specific user-defined APIs that allocate memory
         sources = []
         for node in nodes:
             is_seed_node = False
@@ -46,7 +44,7 @@ class Cpp_MLK_Extractor(DFBScanExtractor):
                 for child in node.children:
                     if child.type == "identifier":
                         name = source_code[child.start_byte : child.end_byte]
-                        if name in mem_allocations or name in spec_apis:
+                        if name in mem_allocations:  # or name in spec_apis:
                             is_seed_node = True
 
             if is_seed_node:
@@ -71,7 +69,7 @@ class Cpp_MLK_Extractor(DFBScanExtractor):
         """
         nodes = find_nodes_by_type(root_node, "call_expression")
         mem_deallocations = {"free"}
-        spec_apis = {}  # specific user-defined APIs that deallocate memory
+        # spec_apis = {}  # specific user-defined APIs that deallocate memory
         sinks = []
         for node in nodes:
             is_sink_node = False
@@ -80,7 +78,7 @@ class Cpp_MLK_Extractor(DFBScanExtractor):
             for child in node.children:
                 if child.type == "identifier":
                     name = source_code[child.start_byte : child.end_byte]
-                    if name in mem_deallocations or name in spec_apis:
+                    if name in mem_deallocations:  # or name in spec_apis:
                         is_sink_node = True
 
             if is_sink_node:

@@ -1,7 +1,6 @@
 from os import path
 import json
-import time
-from typing import List, Set, Optional, Dict
+from typing import List, Dict
 from llmtool.LLM_utils import *
 from llmtool.LLM_tool import *
 from memory.syntactic.function import *
@@ -16,7 +15,7 @@ class PathValidatorInput(LLMToolInput):
         self,
         bug_type: str,
         values: List[Value],
-        values_to_functions: Dict[Value, Function],
+        values_to_functions: Dict[Value, Optional[Function]],
     ) -> None:
         self.bug_type = bug_type
         self.values = values
@@ -59,7 +58,9 @@ class PathValidator(LLMTool):
         self.prompt_file = f"{BASE_PATH}/prompt/{language}/dfbscan/path_validator.json"
         return
 
-    def _get_prompt(self, input: PathValidatorInput) -> str:
+    def _get_prompt(self, input: LLMToolInput) -> str:
+        if not isinstance(input, PathValidatorInput):
+            raise TypeError("expect PathValidatorInput")
         with open(self.prompt_file, "r") as f:
             prompt_template_dict = json.load(f)
         prompt = prompt_template_dict["task"]
@@ -88,7 +89,7 @@ class PathValidator(LLMTool):
 
         program = "\n".join(
             [
-                "```\n" + func.lined_code + "\n```\n"
+                "```\n" + func.lined_code + "\n```\n" if func is not None else "\n"
                 for func in input.values_to_functions.values()
             ]
         )
@@ -96,8 +97,8 @@ class PathValidator(LLMTool):
         return prompt
 
     def _parse_response(
-        self, response: str, input: PathValidatorInput
-    ) -> PathValidatorOutput:
+        self, response: str, input: Optional[LLMToolInput] = None
+    ) -> Optional[LLMToolOutput]:
         answer_match = re.search(r"Answer:\s*(\w+)", response)
         if answer_match:
             answer = answer_match.group(1).strip()

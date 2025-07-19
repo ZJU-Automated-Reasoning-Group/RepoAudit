@@ -1,12 +1,8 @@
 import sys
-import os
 from os import path
-from pathlib import Path
 from tstool.analyzer.TS_analyzer import *
 from memory.syntactic.function import *
 from memory.syntactic.value import *
-import tree_sitter
-import json
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 
@@ -20,11 +16,11 @@ class DFBScanExtractor(ABC):
 
     def __init__(self, ts_analyzer: TSAnalyzer):
         self.ts_analyzer = ts_analyzer
-        self.sources = []
-        self.sinks = []
+        self.sources: List[Value] = []
+        self.sinks: List[Value] = []
         return
 
-    def extract_all(self):
+    def extract_all(self) -> Tuple[List[Value], List[Value]]:
         """
         Start the source/sink extraction process.
         """

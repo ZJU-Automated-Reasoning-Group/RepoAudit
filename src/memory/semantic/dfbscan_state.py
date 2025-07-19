@@ -26,7 +26,7 @@ class DFBScanState(State):
         self._potential_buggy_paths: Dict[Value, Dict[str, List[Value]]] = {}
 
         # Bug reports
-        self._bug_reports: dict[int, List[BugReport]] = {}
+        self._bug_reports: Dict[int, BugReport] = {}
         self._total_bug_count = 0
 
         # Create locks for each field
@@ -113,7 +113,7 @@ class DFBScanState(State):
             return self._potential_buggy_paths.copy()
 
     @property
-    def bug_reports(self) -> Dict[int, List[BugReport]]:
+    def bug_reports(self) -> Dict[int, BugReport]:
         """
         Get the bug reports
         """
