@@ -113,7 +113,7 @@ class DFBScanAgent(Agent):
             if self.bug_type == "NPD":
                 return Go_NPD_Extractor(self.ts_analyzer)
         raise NotImplementedError(
-            "Unsupported bug type: {self.bug_type} in {self.language}"
+            f"Unsupported bug type: {self.bug_type} in {self.language}"
         )
 
     def __update_worklist(
