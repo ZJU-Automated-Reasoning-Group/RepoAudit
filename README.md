@@ -9,6 +9,8 @@ RepoAudit is a repo-level bug detector for general bugs. Currently, it supports 
 
 ## News 📰
 
+**[June 2025]** The preprint of "An LLM Agent for Functional Bug Detection in Network Protocols" has been released, providing the technical details of `rfcscan`!
+
 **[May 2025]** 🎉 Our paper "RepoAudit: Automated Code Auditing with Multi-Agent LLM Framework" has been accepted at ICML 2025! 🏆
 
 **[March 2025]** RepoAudit has helped identify over 100 bugs in open-source projects this quarter!
@@ -104,7 +106,7 @@ If you find our research or tools helpful, please cite the following papers. Mor
   note={*Equal contribution}
 }
 
-@article{rfcscan,
+@article{rfcscan2025,
   title={An LLM Agent for Functional Bug Detection in Network Protocols},
   author={Zheng, Mingwei and Wang, Chengpeng and Liu, Xuwei and Guo, Jinyao and Feng, Shiwei and Zhang, Xiangyu},
   journal={arXiv preprint arXiv:2506.00714},
