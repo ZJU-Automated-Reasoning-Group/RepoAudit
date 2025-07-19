@@ -163,7 +163,9 @@ class Python_TSAnalyzer(TSAnalyzer):
                         sub_sub_node.start_byte : sub_sub_node.end_byte
                     ]
                     if parameter_name != "" and parameter_name != "self":
-                        line_number = file_content[: sub_node.start_byte].count("\n") + 1
+                        line_number = (
+                            file_content[: sub_node.start_byte].count("\n") + 1
+                        )
                         current_function.paras.add(
                             Value(
                                 parameter_name,
