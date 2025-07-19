@@ -18,7 +18,9 @@ class MetaScanAgent(Agent):
     Used for testing llmtools :)
     """
 
-    def __init__(self, project_path, language, ts_analyzer) -> None:
+    def __init__(
+        self, project_path: str, language: str, ts_analyzer: TSAnalyzer
+    ) -> None:
         self.project_path = project_path
         self.project_name = project_path.split("/")[-1]
         self.language = language
@@ -36,23 +38,31 @@ class MetaScanAgent(Agent):
         )
         if not os.path.exists(log_dir_path):
             os.makedirs(log_dir_path)
-        self.logger = Logger(self.log_dir_path + "/" + "metascan.log")
+        self.logger = Logger(log_dir_path + "/" + "metascan.log")
 
         for function_id in self.ts_analyzer.function_env:
-            function_meta_data = {}
+            function_meta_data: Dict = {}
             function = self.ts_analyzer.function_env[function_id]
             function_meta_data["function_id"] = function.function_id
             function_meta_data["function_name"] = function.function_name
             function_meta_data["function_start_line"] = function.start_line_number
             function_meta_data["function_end_line"] = function.end_line_number
 
-            function_meta_data["parameters"] = [str(para) for para in function.paras]
+            function_meta_data["parameters"] = (
+                [str(para) for para in function.paras]
+                if function.paras is not None
+                else []
+            )
 
-            function_meta_data["retvals"] = [str(retval) for retval in function.retvals]
+            function_meta_data["retvals"] = (
+                [str(retval) for retval in function.retvals]
+                if function.retvals is not None
+                else []
+            )
 
             function_meta_data["call_sites"] = []
             for call_site in function.function_call_site_nodes:
-                call_site_info = {}
+                call_site_info: Dict = {}
                 file_content = self.ts_analyzer.fileContentDic[function.file_path]
                 call_site_info["callee_id"] = (
                     self.ts_analyzer.get_callee_function_ids_at_callsite(
@@ -110,7 +120,7 @@ class MetaScanAgent(Agent):
                 ) = self.ts_analyzer.function_env[function_id].if_statements[
                     (if_statement_start_line, if_statement_end_line)
                 ]
-                if_statement = {}
+                if_statement: Dict = {}
                 if_statement["condition_str"] = condition_str
                 if_statement["condition_start_line"] = condition_start_line
                 if_statement["condition_end_line"] = condition_end_line
@@ -134,7 +144,7 @@ class MetaScanAgent(Agent):
                 ) = self.ts_analyzer.function_env[function_id].loop_statements[
                     (loop_statement_start_line, loop_statement_end_line)
                 ]
-                loop_statement = {}
+                loop_statement: Dict = {}
                 loop_statement["loop_statement_start_line"] = loop_statement_start_line
                 loop_statement["loop_statement_end_line"] = loop_statement_end_line
                 loop_statement["header_str"] = header_str
