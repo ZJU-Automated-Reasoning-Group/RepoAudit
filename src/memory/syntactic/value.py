@@ -88,7 +88,7 @@ class Value:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Value):
-            raise NotImplementedError
+            return NotImplemented
         return self.__str__() == other.__str__()
 
     def __repr__(self) -> str:
