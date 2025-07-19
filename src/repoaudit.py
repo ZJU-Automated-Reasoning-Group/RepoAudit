@@ -124,34 +124,57 @@ class RepoAudit:
             inconsistency_agent.start_scan()
         return
 
-    
     def traverse_files(self, project_path: str, suffixs: List) -> None:
         """
         Traverse all files in the project path.
-        """        
+        """
         for root, dirs, files in os.walk(project_path):
             excluded_dirs = {
                 # Common
-                '.git', '.vscode', '.idea', 'build', 'dist', 'out', 'bin',
+                ".git",
+                ".vscode",
+                ".idea",
+                "build",
+                "dist",
+                "out",
+                "bin",
                 # Python
-                '__pycache__', '.pytest_cache', '.mypy_cache', '.coverage', 'venv', 'env',
+                "__pycache__",
+                ".pytest_cache",
+                ".mypy_cache",
+                ".coverage",
+                "venv",
+                "env",
                 # Java
-                'target', '.gradle', '.m2', '.settings', 'classes',
+                "target",
+                ".gradle",
+                ".m2",
+                ".settings",
+                "classes",
                 # C++
-                'CMakeFiles', '.deps', 'Debug', 'Release', 'obj',
+                "CMakeFiles",
+                ".deps",
+                "Debug",
+                "Release",
+                "obj",
                 # Go
-                'vendor', 'pkg'
+                "vendor",
+                "pkg",
             }
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in excluded_dirs]
-            
+            dirs[:] = [
+                d for d in dirs if not d.startswith(".") and d not in excluded_dirs
+            ]
+
             for file in files:
-                if any(file.endswith(f'.{suffix}') for suffix in suffixs):
-                    file_path = os.path.join(root, file)    
+                if any(file.endswith(f".{suffix}") for suffix in suffixs):
+                    file_path = os.path.join(root, file)
                     # if "test" in file_path.lower() or "example" in file_path.lower():
                     #     continue
-                    
+
                     try:
-                        with open(file_path, "r", encoding='utf-8', errors='ignore') as source_file:
+                        with open(
+                            file_path, "r", encoding="utf-8", errors="ignore"
+                        ) as source_file:
                             source_file_content = source_file.read()
                             self.code_in_files[file_path] = source_file_content
                     except Exception as e:
