@@ -123,8 +123,8 @@ class IntraDataFlowAnalyzer(LLMTool):
         """
         paths = []
 
-        # Regex to match a path header line, e.g., "- Path 1: Lines 2 -> 3;"
-        path_header_re = re.compile(r"Path\s+(\d+):\s*(.+?);?$")
+        # Regex to match a path header line, e.g., "Path 1: Lines 2 -> 3"
+        path_header_re = re.compile(r"Path\s*(\d+):\s*([^;]+);?$")
 
         # Regex to match a propagation detail line, e.g.,
         # "  - Type: Return; Name: getNullObject(); Function: None; Index: 0; Line: 3; Dependency: ..."
@@ -180,6 +180,8 @@ class IntraDataFlowAnalyzer(LLMTool):
         for single_path in paths:
             reachable_values_per_path = set()
             for detail in single_path["propagation_details"]:
+                if not detail["line"].isdigit():
+                    continue
                 line_number = int(detail["line"]) + start_line_number - 1
                 if detail["type"] == "Argument":
                     reachable_values_per_path.add(

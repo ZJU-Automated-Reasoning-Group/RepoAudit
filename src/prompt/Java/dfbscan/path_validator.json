@@ -13,7 +13,7 @@
     "In summary, assess the conditions in every sub-path, check for conflicts, and decide whether the entire propagation path is reachable."
   ],
   "question_template": [
-    "When these methods are executed, is the following data-flow propagation path reachable for BUG_TYPE?",
+    "When these functions are executed, does the following data-flow propagation path cause the <BUG_TYPE> bug?",
     "```",
     "<PATH>",
     "```",
@@ -38,9 +38,10 @@
     "    return array[index];",
     "}",
     "```",
+    "Does the following propagation path cause the NPD bug?",
     "Propagation Path: 'array' at line 2 in getArray --> 'array' used at line 2 in getElement",
-    "Explanation: In getArray, if length <= 0, array remains null and is returned. In getElement, a null array would trigger a NullPointerException when accessed at line 2. However, when length > 0, the array is non-null. Since the conditions for array being null and non-null conflict, this propagation path is unreachable.",
-    "Answer: No",
+    "Explanation: In getArray, if length <= 0, array remains null and is returned. In getElement, a null array would trigger a NullPointerException when accessed at line 2. However, when length > 0, the array is non-null. Since the conditions for array being null and non-null conflict, this propagation path is unreachable and does not cause the NPD bug.",
+    "Answer: No.",
     "",
     "Example 2:",
     "User:",
@@ -58,9 +59,10 @@
     "    myObj.toString();",
     "}",
     "```",
-    "Propagation Path: Parameter 'obj' in foo --> foo returns null --> myObj assigned null in bar, which then gets dereferenced causing a method call on null",
-    "Explanation: The method foo returns null when passed a null input. In bar, this leads to myObj being null, which in turn causes a NullPointerException when calling toString(). As there is no conflicting branch condition preventing this case, the propagation path is reachable.",
-    "Answer: Yes"
+    "Does the following propagation path cause the NPD bug?",
+    "Parameter 'obj' in foo --> foo returns null --> myObj assigned null in bar, which then gets dereferenced causing a method call on null",
+    "Explanation: The method foo returns null when passed a null input. In bar, this leads to myObj being null, which in turn causes a NullPointerException when calling toString(). As there is no conflicting branch condition preventing this case, the propagation path is reachable and causes the NPD bug.",
+    "Answer: Yes."
   ],
   "additional_fact": [
     "Additional details may include whether specific lines fall within if-statements and the corresponding line numbers for those conditions.",

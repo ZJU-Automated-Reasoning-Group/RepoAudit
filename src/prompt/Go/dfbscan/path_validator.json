@@ -13,7 +13,7 @@
       "In summary, assess the conditions in every sub-path, check for conflicts, and decide whether the entire propagation path is reachable."
     ],
     "question_template": [
-      "When these functions are executed, is the following data-flow propagation path reachable for BUG_TYPE?",
+      "When these functions are executed, does the following data-flow propagation path cause the <BUG_TYPE> bug?",
       "```",
       "<PATH>",
       "```",
@@ -38,8 +38,9 @@
       "    return array[index]",
       "}",
       "```",
-      "Propagation Path: 'array' at line 2 in getArray --> 'array' used at line 2 in getElement",
-      "Explanation: In getArray, if length <= 0, array remains a nil slice and is returned. In getElement, a nil slice would trigger a panic when accessed at line 2. However, when length > 0, the array is non-nil. Since the conditions for array being nil and non-nil conflict, this propagation path is unreachable.",
+      "Does the following propagation path cause the NPD bug (nil panic)?",
+      "'array' at line 2 in getArray --> 'array' used at line 2 in getElement",
+      "Explanation: In getArray, if length <= 0, array remains a nil slice and is returned. In getElement, a nil slice would trigger a panic when accessed at line 2. However, when length > 0, the array is non-nil. Since the conditions for array being nil and non-nil conflict, this propagation path is unreachable and does not cause the NPD bug (nil panic).",
       "Answer: No",
       "",
       "Example 2:",
@@ -58,9 +59,10 @@
       "    myObj.String()",
       "}",
       "```",
-      "Propagation Path: Parameter 'obj' in foo --> foo returns nil --> myObj assigned nil in bar, which then gets dereferenced causing a method call on nil",
-      "Explanation: The function foo returns nil when passed a nil input. In bar, this leads to myObj being nil, which in turn causes a panic when calling String(). As there is no conflicting branch condition preventing this case, the propagation path is reachable.",
-      "Answer: Yes"
+      "Does the following propagation path cause the NPD bug (nil panic)?",
+      "Parameter 'obj' in foo --> foo returns nil --> myObj assigned nil in bar, which then gets dereferenced causing a method call on nil",
+      "Explanation: The function foo returns nil when passed a nil input. In bar, this leads to myObj being nil, which in turn causes a panic when calling String(). As there is no conflicting branch condition preventing this case, the propagation path is reachable and causes the NPD bug (nil panic).",
+      "Answer: Yes."
     ],
     "additional_fact": [
       "Additional details may include whether specific lines fall within if-statements and the corresponding line numbers for those conditions.",
