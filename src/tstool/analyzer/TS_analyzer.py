@@ -115,7 +115,7 @@ class CallContext:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CallContext):
-            raise NotImplementedError
+            return NotImplemented
         return self.__str__() == other.__str__()
 
     def __hash__(self) -> int:
