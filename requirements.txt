@@ -13,3 +13,7 @@ botocore
 boto3
 black
 anthropic
+mypy
+types-networkx
+types-tqdm
+boto3-stubs[essential]

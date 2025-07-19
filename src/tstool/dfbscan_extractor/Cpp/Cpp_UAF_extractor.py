@@ -6,7 +6,7 @@ import argparse
 
 
 class Cpp_UAF_Extractor(DFBScanExtractor):
-    def extract_sources(self, function: Function) -> List[Tuple[Value, bool]]:
+    def extract_sources(self, function: Function) -> List[Value]:
         """
         Extract the sources that can cause the use-after-free bugs from C/C++ programs.
         :param: function: Function object.
@@ -24,7 +24,7 @@ class Cpp_UAF_Extractor(DFBScanExtractor):
         nodes.extend(find_nodes_by_type(root_node, "delete_expression"))
 
         free_functions = {"free", "ngx_destroy_black_list_link"}
-        spec_apis = {}  # specific user-defined APIs
+        # spec_apis = {}  # specific user-defined APIs
         sources = []
         for node in nodes:
             is_seed_node = False

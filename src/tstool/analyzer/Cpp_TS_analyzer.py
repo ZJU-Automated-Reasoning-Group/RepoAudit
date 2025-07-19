@@ -180,7 +180,7 @@ class Cpp_TSAnalyzer(TSAnalyzer):
         :param call_site_node: the node of the call site
         :return: the arguments
         """
-        arguments = set([])
+        arguments: Set[Value] = set([])
         file_name = current_function.file_path
         source_code = self.code_in_files[file_name]
         for sub_node in call_site_node.children:

@@ -37,15 +37,15 @@ BASE_PATH = Path(__file__).resolve().parents[2]
 class DFBScanAgent(Agent):
     def __init__(
         self,
-        bug_type,
-        is_reachable,
-        project_path,
-        language,
-        ts_analyzer,
-        model_name,
-        temperature,
-        call_depth,
-        max_neural_workers=30,
+        bug_type: str,
+        is_reachable: bool,
+        project_path: str,
+        language: str,
+        ts_analyzer: TSAnalyzer,
+        model_name: str,
+        temperature: float,
+        call_depth: int,
+        max_neural_workers: int = 30,
         agent_id: int = 0,
     ) -> None:
         self.bug_type = bug_type
@@ -112,7 +112,9 @@ class DFBScanAgent(Agent):
         elif self.language == "Go":
             if self.bug_type == "NPD":
                 return Go_NPD_Extractor(self.ts_analyzer)
-        return None
+        raise NotImplementedError(
+            f"Unsupported bug type: {self.bug_type} in {self.language}"
+        )
 
     def __update_worklist(
         self,
@@ -174,21 +176,23 @@ class DFBScanAgent(Agent):
                     if not is_CFL_reachable:
                         continue
 
-                    for para in callee_function.paras:
-                        if para.index == value.index:
-                            delta_worklist.append(
-                                (para, callee_function, new_call_context)
-                            )
-                            self.state.update_external_value_match(
-                                (value, call_context), set({(para, new_call_context)})
-                            )
+                    if callee_function.paras is not None:
+                        for para in callee_function.paras:
+                            if para.index == value.index:
+                                delta_worklist.append(
+                                    (para, callee_function, new_call_context)
+                                )
+                                self.state.update_external_value_match(
+                                    (value, call_context),
+                                    set({(para, new_call_context)}),
+                                )
 
             if value.label == ValueLabel.PARA:
                 # Consider side-effect.
                 # Example: the parameter *p is used in the function: p->f = null;
                 # We need to consider the side-effect of p.
-                caller_function = self.ts_analyzer.get_all_caller_functions(function)
-                for caller_function in caller_function:
+                caller_functions = self.ts_analyzer.get_all_caller_functions(function)
+                for caller_function in caller_functions:
                     new_call_context = copy.deepcopy(call_context)
                     top_unmatched_context_label = (
                         new_call_context.get_top_unmatched_context_label()
@@ -442,9 +446,13 @@ class DFBScanAgent(Agent):
                             ret.name,
                             ret.line_number - start_function.start_line_number + 1,
                         )
-                        for ret in start_function.retvals
+                        for ret in (
+                            start_function.retvals
+                            if start_function.retvals is not None
+                            else []
+                        )
                     ]
-                    input = IntraDataFlowAnalyzerInput(
+                    df_input = IntraDataFlowAnalyzerInput(
                         start_function,
                         start_value,
                         sink_values,
@@ -453,20 +461,22 @@ class DFBScanAgent(Agent):
                     )
 
                     # Invoke the intra-procedural data-flow analysis
-                    output = self.intra_dfa.invoke(input)
-                    if output is None:
+                    df_output = self.intra_dfa.invoke(
+                        df_input, IntraDataFlowAnalyzerOutput
+                    )
+                    if df_output is None:
                         continue
 
-                    for path_index in range(len(output.reachable_values)):
+                    for path_index in range(len(df_output.reachable_values)):
                         reachable_values_in_single_path = set([])
-                        for value in output.reachable_values[path_index]:
+                        for value in df_output.reachable_values[path_index]:
                             reachable_values_in_single_path.add((value, call_context))
                         self.state.update_reachable_values_per_path(
                             (start_value, call_context), reachable_values_in_single_path
                         )
 
                         delta_worklist = self.__update_worklist(
-                            input, output, call_context, path_index
+                            df_input, df_output, call_context, path_index
                         )
                         worklist.extend(delta_worklist)
 
@@ -479,7 +489,7 @@ class DFBScanAgent(Agent):
                     continue
 
                 for buggy_path in self.state.potential_buggy_paths[src_value].values():
-                    input = PathValidatorInput(
+                    pv_input = PathValidatorInput(
                         self.bug_type,
                         buggy_path,
                         {
@@ -487,12 +497,14 @@ class DFBScanAgent(Agent):
                             for value in buggy_path
                         },
                     )
-                    output: PathValidatorOutput = self.path_validator.invoke(input)
+                    pv_output = self.path_validator.invoke(
+                        pv_input, PathValidatorOutput
+                    )
 
-                    if output is None:
+                    if pv_output is None:
                         continue
 
-                    if output.is_reachable:
+                    if pv_output.is_reachable:
                         relevant_functions = {}
                         for value in buggy_path:
                             function = self.ts_analyzer.get_function_from_localvalue(
@@ -505,7 +517,7 @@ class DFBScanAgent(Agent):
                             self.bug_type,
                             src_value,
                             relevant_functions,
-                            output.explanation_str,
+                            pv_output.explanation_str,
                         )
                         self.state.update_bug_report(bug_report)
 
@@ -606,28 +618,30 @@ class DFBScanAgent(Agent):
 
             ret_values = [
                 (ret.name, ret.line_number - start_function.start_line_number + 1)
-                for ret in start_function.retvals
+                for ret in (
+                    start_function.retvals if start_function.retvals is not None else []
+                )
             ]
-            input = IntraDataFlowAnalyzerInput(
+            df_input = IntraDataFlowAnalyzerInput(
                 start_function, start_value, sink_values, call_statements, ret_values
             )
 
             # Invoke the intra-procedural data-flow analysis
-            output = self.intra_dfa.invoke(input)
+            df_output = self.intra_dfa.invoke(df_input, IntraDataFlowAnalyzerOutput)
 
-            if output is None:
+            if df_output is None:
                 continue
 
-            for path_index in range(len(output.reachable_values)):
+            for path_index in range(len(df_output.reachable_values)):
                 reachable_values_in_single_path = set([])
-                for value in output.reachable_values[path_index]:
+                for value in df_output.reachable_values[path_index]:
                     reachable_values_in_single_path.add((value, call_context))
                 self.state.update_reachable_values_per_path(
                     (start_value, call_context), reachable_values_in_single_path
                 )
 
                 delta_worklist = self.__update_worklist(
-                    input, output, call_context, path_index
+                    df_input, df_output, call_context, path_index
                 )
                 worklist.extend(delta_worklist)
 
@@ -645,22 +659,25 @@ class DFBScanAgent(Agent):
                 for value in buggy_path
             }
 
-            relevant_functions = values_to_functions.values()
+            functions: Set[Function] = set()
+            for func in values_to_functions.values():
+                if func is not None:
+                    functions.add(func)
 
-            if self.state.check_existence(src_value, relevant_functions):
+            if self.state.check_existence(src_value, functions):
                 continue
 
-            input = PathValidatorInput(
+            pv_input = PathValidatorInput(
                 self.bug_type,
                 buggy_path,
                 values_to_functions,
             )
-            output: PathValidatorOutput = self.path_validator.invoke(input)
+            pv_output = self.path_validator.invoke(pv_input, PathValidatorOutput)
 
-            if output is None:
+            if pv_output is None:
                 continue
 
-            if output.is_reachable:
+            if pv_output.is_reachable:
                 relevant_functions = {}
                 for value in buggy_path:
                     function = self.ts_analyzer.get_function_from_localvalue(value)
@@ -668,7 +685,10 @@ class DFBScanAgent(Agent):
                         relevant_functions[function.function_id] = function
 
                 bug_report = BugReport(
-                    self.bug_type, src_value, relevant_functions, output.explanation_str
+                    self.bug_type,
+                    src_value,
+                    relevant_functions,
+                    pv_output.explanation_str,
                 )
                 self.state.update_bug_report(bug_report)
                 bug_report_dict = {
