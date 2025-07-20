@@ -2,10 +2,10 @@
 
 ## Installation
 
-1. Create and activate a conda environment with Python 3.9.18:
+1. Create and activate a conda environment with Python 3.13:
 
    ```sh
-   conda create -n repoaudit python=3.9.18
+   conda create -n repoaudit python=3.13
    conda activate repoaudit
    ```
 

@@ -119,7 +119,7 @@ class Python_TSAnalyzer(TSAnalyzer):
         :param call_site_node: the node of the call site
         :return: the arguments
         """
-        arguments = set([])
+        arguments: Set[Value] = set([])
         file_name = current_function.file_path
         source_code = self.code_in_files[file_name]
         for sub_node in call_site_node.children:
@@ -158,23 +158,24 @@ class Python_TSAnalyzer(TSAnalyzer):
         for parameter_node in parameters:
             parameter_name = ""
             for sub_node in parameter_node.children:
-                for sub_node in find_nodes_by_type(sub_node, "identifier"):
+                for sub_sub_node in find_nodes_by_type(sub_node, "identifier"):
                     parameter_name = file_content[
-                        sub_node.start_byte : sub_node.end_byte
+                        sub_sub_node.start_byte : sub_sub_node.end_byte
                     ]
-                    break
-            if parameter_name != "" and parameter_name != "self":
-                line_number = file_content[: sub_node.start_byte].count("\n") + 1
-                current_function.paras.add(
-                    Value(
-                        parameter_name,
-                        line_number,
-                        ValueLabel.PARA,
-                        current_function.file_path,
-                        index,
-                    )
-                )
-                index += 1
+                    if parameter_name != "" and parameter_name != "self":
+                        line_number = (
+                            file_content[: sub_node.start_byte].count("\n") + 1
+                        )
+                        current_function.paras.add(
+                            Value(
+                                parameter_name,
+                                line_number,
+                                ValueLabel.PARA,
+                                current_function.file_path,
+                                index,
+                            )
+                        )
+                        index += 1
         return current_function.paras
 
     def get_return_values_in_single_function(

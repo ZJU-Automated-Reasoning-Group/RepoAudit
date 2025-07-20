@@ -1,30 +1,36 @@
-# RepoAudit++
+# RepoAudit
 
-RepoAudit++ is a repo-level bug detector for general bugs. Currently, it supports the detection of diverse bug types (such as Null Pointer Dereference, Memory Leak, and Use After Free) in multiple programming languages (including C/C++, Java, Python, and Go). It leverages [LLMSCAN](https://github.com/PurCL/LLMSCAN) to parse the codebase and uses LLM to mimic the process of manual code auditing. Compared with existing code auditing tools, RepoAudit offers the following advantages:
+RepoAudit is a repo-level bug detector for general bugs. Currently, it supports the detection of diverse bug types (such as Null Pointer Dereference, Memory Leak, and Use After Free) in multiple programming languages (including C/C++, Java, Python, and Go). It leverages [LLMSCAN](https://github.com/PurCL/LLMSCAN) to parse the codebase and uses LLM to mimic the process of manual code auditing. Compared with existing code auditing tools, RepoAudit offers the following advantages:
 
 - 🛡️ **Compilation-Free Analysis**
 - 🌍 **Multi-Lingual Support**
 - 🐞 **Multiple Bug Type Detection**
 - ⚙️ **Customization Support**
 
-## Agents in RepoAudit++
+## News 📰
 
-RepoAudit++ is a multi-agent framework for code auditing. We offer two agent instances in our current version:
+**[June 2025]** The preprint of "An LLM Agent for Functional Bug Detection in Network Protocols" has been released, providing the technical details of `rfcscan`!
+
+**[May 2025]** 🎉 Our paper "RepoAudit: Automated Code Auditing with Multi-Agent LLM Framework" has been accepted at ICML 2025! 🏆
+
+**[March 2025]** RepoAudit has helped identify over 100 bugs in open-source projects this quarter!
+
+## Agents in RepoAudit
+
+RepoAudit is a multi-agent framework for code auditing. We offer two agent instances in our current version:
 
 - **MetaScanAgent** in `metascan.py`: Scan the project using tree-sitter–powered parsing-based analyzers and obtains the basic syntactic properties of the program.
 
 - **DFBScanAgent** in `dfbscan.py`: Perform inter-procedural data-flow analysis as described in this [preprint](https://arxiv.org/abs/2501.18160). It detects data-flow bugs, including source-must-not-reach-sink bugs (e.g., Null Pointer Dereference) and source-must-reach-sink bugs (e.g., Memory Leak).
 
-We are keeping implementing more agents and will open-source them very soon. Utilizing DFBScanAgent and other agents, we have discovered hundred of confirmed and fixed bugs in open-source community. 
-
-You can refer to this [bug list](https://repoaudit-home.github.io/bugreports.html).
+We are keeping implementing more agents and will open-source them very soon. Utilizing DFBScanAgent and other agents, we have discovered hundred of confirmed and fixed bugs in open-source community. You can refer to this [bug list](https://repoaudit-home.github.io/bugreports.html).
 
 ## Installation
 
-1. Create and activate a conda environment with Python 3.9.18:
+1. Create and activate a conda environment with Python 3.13:
 
    ```sh
-   conda create -n repoaudit python=3.9.18
+   conda create -n repoaudit python=3.13
    conda activate repoaudit
    ```
 
@@ -42,13 +48,11 @@ You can refer to this [bug list](https://repoaudit-home.github.io/bugreports.htm
    python build.py
    ```
 
-4. Configure the API keys for supported LLM providers:
+4. Configure the OpenAI API key and Anthropic API key:
 
    ```sh
    export OPENAI_API_KEY=xxxxxx >> ~/.bashrc
    export ANTHROPIC_API_KEY=xxxxxx >> ~/.bashrc
-   export DEEPSEEK_API_KEY=xxxxxx >> ~/.bashrc
-   export GLM_API_KEY=xxxxxx >> ~/.bashrc
    ```
 
 
@@ -82,11 +86,11 @@ We have open-sourced the implementation of [dfbscan](https://github.com/PurCL/Re
 
 For more details about tool usage, project architecture, and extensions of RepoAudit, please refer to the following documents:
 
-- [User Guide](docs/guide.md): Detailed instructions on installation, configuration, and usage of RepoAudit, including CLI and webUI usage.
+- [User Guide](https://github.com/PurCL/RepoAudit/wiki/01.-User-Guide): Detailed instructions on installation, configuration, and usage of RepoAudit, including CLI and webUI usage.
 
-- [Tool Architecture](docs/architecture.md): In-depth explanation of RepoAudit's multi-agent framework, including parsing-based analyzers/tools, LLM-driven tools, and agent memory designs.
+- [Project Architecture](https://github.com/PurCL/RepoAudit/wiki/02.-Project-Architecture): In-depth explanation of RepoAudit's multi-agent framework, including parsing-based analyzers/tools, LLM-driven tools, and agent memory designs.
 
-- [Extension](docs/extension.md): Guidelines for customizing RepoAudit to support new bug types and programming languages.
+- [Extension](https://github.com/PurCL/RepoAudit/wiki/03.-How-to-Extend): Guidelines for customizing RepoAudit to support new bug types and programming languages.
 
 - [DeepWiki](https://deepwiki.com/PurCL/RepoAudit): All-in-one documentation generated by [`Devin`](https://devin.ai/).
 
@@ -102,7 +106,7 @@ If you find our research or tools helpful, please cite the following papers. Mor
   note={*Equal contribution}
 }
 
-@article{rfcscan,
+@article{rfcscan2025,
   title={An LLM Agent for Functional Bug Detection in Network Protocols},
   author={Zheng, Mingwei and Wang, Chengpeng and Liu, Xuwei and Guo, Jinyao and Feng, Shiwei and Zhang, Xiangyu},
   journal={arXiv preprint arXiv:2506.00714},
@@ -113,3 +117,13 @@ If you find our research or tools helpful, please cite the following papers. Mor
 ## License
 
 This project is licensed under [MIT license](LICENSE).
+
+## Contact
+
+For any questions or suggestions, please submit issues or pull requests on GitHub. You can also reach out to our maintainers:
+
+- Chengpeng Wang (Purdue University) - [wang6590@purdue.edu](mailto:wang6590@purdue.edu)
+
+- Jinyao Guo (Purdue University) - [guo846@purdue.edu](mailto:guo846@purdue.edu) 
+
+- Zhuo Zhang (Columbia University) - [zz3474@columbia.edu](mailto:zz3474@columbia.edu)

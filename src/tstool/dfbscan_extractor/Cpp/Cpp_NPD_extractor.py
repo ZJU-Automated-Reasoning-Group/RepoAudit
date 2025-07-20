@@ -22,7 +22,7 @@ class Cpp_NPD_Extractor(DFBScanExtractor):
         nodes.extend(find_nodes_by_type(root_node, "return_statement"))
         nodes.extend(find_nodes_by_type(root_node, "call_expression"))
 
-        spec_apis = {"malloc"}  # specific user-defined APIs that can return NULL
+        # spec_apis = {"malloc"}  # specific user-defined APIs that can return NULL
         sources = []
         for node in nodes:
             is_seed_node = False

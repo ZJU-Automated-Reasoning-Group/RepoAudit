@@ -11,6 +11,9 @@ tqdm
 streamlit
 #botocore
 #boto3
-#black
+black
 anthropic
-zhipuai
+mypy
+types-networkx
+types-tqdm
+#boto3-stubs[essential]

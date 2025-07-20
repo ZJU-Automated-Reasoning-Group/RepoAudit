@@ -1,0 +1,16 @@
+[tool.black]
+line-length      = 88        # keep the default PEP‑8‑plus setting
+target-version   = ["py39"]  # ensures Python‑3.9 compatible formatting
+skip-string-normalization = false
+include = '\.pyi?$'
+
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.venv
+  | build
+  | dist
+)/
+'''

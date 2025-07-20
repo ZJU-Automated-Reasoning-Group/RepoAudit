@@ -1,4 +1,10 @@
-import tree_sitter
+from tree_sitter import Node
+from typing import List, Optional, Set, Tuple, Dict
+from memory.syntactic.value import Value
+
+LineScope = Tuple[int, int]
+IfInfo = Tuple[int, int, str, LineScope, LineScope]
+LoopInfo = Tuple[int, int, str, int, int]
 
 
 class Function:
@@ -9,7 +15,7 @@ class Function:
         function_code: str,
         start_line_number: int,
         end_line_number: int,
-        function_node: tree_sitter.Node,
+        function_node: Node,
         file_path: str,
     ) -> None:
         """
@@ -31,16 +37,18 @@ class Function:
         self.parse_tree_root_node = (
             function_node  # root node of the parse tree of the current function
         )
-        self.function_call_site_nodes = []  # call site info of user-defined functions
-        self.api_call_site_nodes = []  # call site info of library APIs
+        self.function_call_site_nodes: List[Node] = (
+            []
+        )  # call site info of user-defined functions
+        self.api_call_site_nodes: List[Node] = []  # call site info of library APIs
 
         ## Results of AST node type analysis
-        self.paras = None  # A set of parameters
-        self.retvals = None  # A set of returned values
+        self.paras: Optional[Set[Value]] = None  # A set of parameters
+        self.retvals: Optional[Set[Value]] = None  # A set of returned values
 
         ## Results of intraprocedural control flow analysis
-        self.if_statements = {}  # if statement info
-        self.loop_statements = {}  # loop statement info
+        self.if_statements: Dict[LineScope, IfInfo] = {}  # if statement info
+        self.loop_statements: Dict[LineScope, LoopInfo] = {}  # loop statement info
 
     def __hash__(self) -> int:
         return hash(
