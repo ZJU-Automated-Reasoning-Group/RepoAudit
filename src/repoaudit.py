@@ -4,7 +4,7 @@ import glob
 import sys
 from agent.metascan import *
 from agent.dfbscan import *
-from agent.inconsistency import *
+from src.agent.inconsistencyscan import *
 
 from tstool.analyzer.TS_analyzer import *
 from tstool.analyzer.Cpp_TS_analyzer import *
