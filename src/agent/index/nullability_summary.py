@@ -32,13 +32,18 @@ class NullabilityAnalysisOutput(LLMToolOutput):
 
 
 class NullabilityExtractor(LLMTool):
-    def _get_prompt(self, input: NullabilityAnalysisInput) -> str:
+    def _get_prompt(self, input: LLMToolInput) -> str:
+        # Cast to the specific type we know it is
+        nullability_input = input if isinstance(input, NullabilityAnalysisInput) else None
+        if nullability_input is None:
+            raise TypeError("Expected NullabilityAnalysisInput")
+            
         return f"""You are an expert code analyzer for {self.language} nullability analysis.
 
 Analyze this function for nullability patterns:
-Function: {input.function.function_name}
+Function: {nullability_input.function.function_name}
 ```{self.language}
-{input.function_code}
+{nullability_input.function_code}
 ```
 
 Return JSON with nullability analysis:
@@ -76,7 +81,7 @@ Return JSON with nullability analysis:
 
 Only return the JSON object."""
     
-    def _parse_response(self, response: str, input: NullabilityAnalysisInput) -> Optional[NullabilityAnalysisOutput]:
+    def _parse_response(self, response: str, input: Optional[LLMToolInput] = None) -> Optional[LLMToolOutput]:
         try:
             response = response.strip()
             if response.startswith("```json"):
@@ -100,7 +105,7 @@ class NullabilitySummarizer:
     def __init__(self, ts_analyzer: TSAnalyzer, model_name: str = "gpt-4", 
                  temperature: float = 0.1, logger: Optional[Logger] = None):
         self.ts_analyzer = ts_analyzer
-        self.logger = logger or Logger(console=True, log_file=None)
+        self.logger = logger or Logger(log_file_path="nullability_analysis.log")
         self.extractor = NullabilityExtractor(model_name, temperature, 
                                             ts_analyzer.language_name, 3, self.logger)
         self.function_nullability: Dict[int, NullabilityAnalysisOutput] = {}
@@ -110,7 +115,8 @@ class NullabilitySummarizer:
             file_content = self.ts_analyzer.code_in_files[function.file_path]
             function_code = file_content[function.parse_tree_root_node.start_byte:function.parse_tree_root_node.end_byte]
             
-            result = self.extractor.invoke(NullabilityAnalysisInput(function, function_code, self.ts_analyzer.language_name))
+            result = self.extractor.invoke(NullabilityAnalysisInput(function, function_code, self.ts_analyzer.language_name), 
+                                         NullabilityAnalysisOutput)
             if result:
                 self.function_nullability[function.function_id] = result
             return result
@@ -140,7 +146,7 @@ class NullabilitySummarizer:
         
         for function_id, result in self.function_nullability.items():
             function = self.ts_analyzer.function_env[function_id]
-            summary["functions"][function_id] = {
+            summary["functions"][str(function_id)] = {
                 "function_name": function.function_name,
                 "file_path": function.file_path,
                 "parameters": result.parameters,

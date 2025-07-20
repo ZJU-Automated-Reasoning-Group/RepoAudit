@@ -69,7 +69,12 @@ class VulnerabilityAnalyzer(LLMTool):
         super().__init__(model_name, temperature, language, max_query_num, logger)
         self.agent_id = agent_id
     
-    def _get_prompt(self, input: MemoryAuditInput) -> str:
+    def _get_prompt(self, input: LLMToolInput) -> str:
+        # Cast input to the expected type
+        audit_input = input if isinstance(input, MemoryAuditInput) else None
+        if audit_input is None:
+            raise ValueError("Expected MemoryAuditInput")
+            
         bug_descriptions = {
             VulnType.NPD: "Null Pointer Dereference - accessing NULL pointer",
             VulnType.UAF: "Use-After-Free - using freed memory",
@@ -77,14 +82,14 @@ class VulnerabilityAnalyzer(LLMTool):
             VulnType.ML: "Memory Leak - allocated memory not freed"
         }
         
-        return f"""You are a security expert who needs to check {input.language} code for {bug_descriptions[input.bug_type]} vulnerabilities.
+        return f"""You are a security expert who needs to check {audit_input.language} code for {bug_descriptions[audit_input.bug_type]} vulnerabilities.
 
 Code:
-```{input.language}
-{input.code}
+```{audit_input.language}
+{audit_input.code}
 ```
 
-Please carefully analyze the code and focus only on {input.bug_type.value} type vulnerabilities.
+Please carefully analyze the code and focus only on {audit_input.bug_type.value} type vulnerabilities.
 
 Return JSON format:
 {{
@@ -100,7 +105,12 @@ Return JSON format:
 
 If no issues are found, return an empty array. Only return JSON, no other content."""
 
-    def _parse_response(self, response: str, input: MemoryAuditInput = None) -> MemoryAuditOutput:
+    def _parse_response(self, response: str, input: Optional[LLMToolInput] = None) -> Optional[MemoryAuditOutput]:
+        # Cast input to the expected type
+        audit_input = input if isinstance(input, MemoryAuditInput) else None
+        if audit_input is None:
+            return MemoryAuditOutput([])
+            
         try:
             # Clean the response to extract JSON
             response = response.strip()
@@ -133,7 +143,7 @@ If no issues are found, return an empty array. Only return JSON, no other conten
             
             for item in data.get("findings", []):
                 finding = Finding(
-                    vuln_type=input.bug_type,
+                    vuln_type=audit_input.bug_type,
                     severity=Severity[item["severity"]],
                     description=item["description"],
                     line_range=item["line_range"],
@@ -177,7 +187,7 @@ class MemoryAuditor:
             return []
         
         # 按位置分组
-        grouped = {}
+        grouped: Dict[str, List[Finding]] = {}
         for f in all_findings:
             key = f.line_range
             if key not in grouped:
@@ -201,22 +211,26 @@ class MemoryAuditor:
         
         return final_findings
     
+    def _analyze_with_agent(self, audit_input: MemoryAuditInput, model_name: str, agent_name: str) -> Optional[MemoryAuditOutput]:
+        """Helper method to analyze code with a single agent"""
+        analyzer = VulnerabilityAnalyzer(
+            model_name, agent_name, self.temperature, 
+            self.language, 5, self.logger
+        )
+        return analyzer.invoke(audit_input, MemoryAuditOutput)
+    
     def analyze(self, code: str) -> Dict:
         """Analyze code"""
         self.logger.print_console(f"🔍 Starting {self.bug_type.value} detection...\n")
         
         audit_input = MemoryAuditInput(code, self.bug_type, self.language)
-        all_findings = []
+        all_findings: List[Finding] = []
         
         # Parallel invocation of multiple models
         with ThreadPoolExecutor(max_workers=len(self.agents)) as executor:
             futures = {}
             for model_name, agent_name in self.agents:
-                analyzer = VulnerabilityAnalyzer(
-                    model_name, agent_name, self.temperature, 
-                    self.language, 5, self.logger
-                )
-                futures[executor.submit(analyzer.invoke, audit_input)] = agent_name
+                futures[executor.submit(self._analyze_with_agent, audit_input, model_name, agent_name)] = agent_name
             
             for future in as_completed(futures):
                 agent_name = futures[future]

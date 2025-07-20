@@ -4,7 +4,6 @@ import glob
 import sys
 from agent.metascan import *
 from agent.dfbscan import *
-from agent.inconsistencyscan import *
 
 from tstool.analyzer.TS_analyzer import *
 from tstool.analyzer.Cpp_TS_analyzer import *
@@ -110,17 +109,6 @@ class RepoAudit:
                 self.max_neural_workers,
             )
             dfbscan_agent.start_scan()
-            
-        if self.args.scan_type == "inconsistency":
-            inconsistency_agent = InconsistencyAgent(
-                self.project_path,
-                self.language,
-                self.ts_analyzer,
-                self.model_name,
-                self.temperature,
-                self.max_neural_workers,
-            )
-            inconsistency_agent.start_scan()
         return
 
     def traverse_files(self, project_path: str, suffixs: List) -> None:
@@ -193,9 +181,6 @@ class RepoAudit:
                 err_messages.append("Error: Invalid bug type provided.")
         elif self.args.scan_type == "metascan":
             return (True, [])
-        elif self.args.scan_type == "inconsistency":
-            if not self.args.model_name:
-                err_messages.append("Error: --model-name is required for inconsistency.")
         else:
             err_messages.append("Error: Unknown scan type provided.")
         return (len(err_messages) == 0, err_messages)
@@ -208,7 +193,7 @@ def configure_args():
     parser.add_argument(
         "--scan-type",
         required=True,
-        choices=["metascan", "dfbscan", "inconsistency"],
+        choices=["metascan", "dfbscan"],
         help="The type of scan to perform.",
     )
     # Common parameters of metascan and dfbscan
