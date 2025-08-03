@@ -1,0 +1,11 @@
+{
+    "model_role_name": "",
+    "user_role_name": "",
+    "system_role": "",
+    "task": "",
+    "analysis_rules": [],
+    "analysis_examples": [],
+    "question_template": "",
+    "answer_format_cot": [],
+    "meta_prompts": []
+  }

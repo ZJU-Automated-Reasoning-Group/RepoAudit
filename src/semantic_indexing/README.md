@@ -1,4 +1,4 @@
-# Semantic Indexing and Querying
+# Semantic Indexing and Querying System
 
 ## 🚀 Phase 1: Code Semantic Indexing
 
@@ -18,3 +18,4 @@ python nullability_summary.py /path/to/repo
 
 ### 🚀 Phase 2: Querying the CodeBases
 
+TBD: provide interfaces for RepoAudit
